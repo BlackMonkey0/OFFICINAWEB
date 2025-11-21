@@ -59,15 +59,21 @@ function renderFiltros(){
   tbody.innerHTML = '';
   Object.entries(filtros).forEach(([id,item])=>{
     const tr=el('tr');
-    const L = (LANGS && langSelector && LANGS[langSelector.value]) ? LANGS[langSelector.value] : (LANGS?LANGS.es:{edit:'Editar',delete:'Eliminar'});
-    tr.innerHTML = `<td>${escapeHtml(item.ref)}</td><td>${escapeHtml(item.brand)}</td><td>${escapeHtml(item.model)}</td><td>${escapeHtml(item.categoria)}</td><td>${Number(item.qty)||0}</td>
+    const current = langSelector && langSelector.value ? langSelector.value : (localStorage.getItem('almacen_lang') || 'es');
+    const L = (LANGS && LANGS[current]) ? LANGS[current] : LANGS.es;
+    const catLabel = (LANGS[current] && LANGS[current].categories && LANGS[current].categories[item.categoria]) ? LANGS[current].categories[item.categoria] : (item.categoria || '');
+    tr.innerHTML = `<td>${escapeHtml(item.ref)}</td><td>${escapeHtml(item.brand)}</td><td>${escapeHtml(item.model)}</td><td>${escapeHtml(catLabel)}</td><td>${Number(item.qty)||0}</td>
       <td class="actions">
         <button class="small btn-edit" data-action="edit" data-id="${id}">${escapeHtml(L.edit)}</button>
         <button class="small btn-delete" data-action="delete" data-id="${id}">${escapeHtml(L.delete)}</button>
       </td>`;
     tbody.appendChild(tr);
   });
-  const full = $('#filtros_full'); if(full) full.innerHTML = Object.entries(filtros).map(([id,it])=>`<div>${escapeHtml(it.ref)} — ${escapeHtml(it.brand)} — ${escapeHtml(it.model)} — ${escapeHtml(it.categoria)} — ${Number(it.qty)||0}</div>`).join('');
+  const full = $('#filtros_full'); if(full) full.innerHTML = Object.entries(filtros).map(([id,it])=>{
+    const current = langSelector && langSelector.value ? langSelector.value : (localStorage.getItem('almacen_lang') || 'es');
+    const catLabel = (LANGS[current] && LANGS[current].categories && LANGS[current].categories[it.categoria]) ? LANGS[current].categories[it.categoria] : (it.categoria || '');
+    return `<div>${escapeHtml(it.ref)} — ${escapeHtml(it.brand)} — ${escapeHtml(it.model)} — ${escapeHtml(catLabel)} — ${Number(it.qty)||0}</div>`
+  }).join('');
 }
 
 function renderNotas(){
@@ -202,9 +208,15 @@ function createCharts(){
   const ctxF = document.getElementById('chart_filtros').getContext('2d');
   chartFil = new Chart(ctxF, {
     type:'doughnut',
-    data:{ labels:['aceite','aire','habitaculos','combustible'], datasets:[{ data:[0,0,0,0] }] },
+    data:{ labels:getCategoryLabels(), datasets:[{ data:[0,0,0,0] }] },
     options:{ responsive:true, maintainAspectRatio:false }
   });
+}
+
+function getCategoryLabels(lang){
+  const current = lang || (langSelector && langSelector.value ? langSelector.value : (localStorage.getItem('almacen_lang') || 'es'));
+  const cats = (LANGS[current] && LANGS[current].categories) ? LANGS[current].categories : (LANGS.es && LANGS.es.categories ? LANGS.es.categories : { aceite:'aceite', aire:'aire', habitaculos:'habitaculos', combustible:'combustible' });
+  return ['aceite','aire','habitaculos','combustible'].map(k => cats[k] || k);
 }
 
 function updateChartMateriales(){
@@ -219,6 +231,10 @@ function updateChartFiltros(){
   const counts = { aceite:0, aire:0, habitaculos:0, combustible:0 };
   Object.values(filtros).forEach(f=>{ if(f && counts[f.categoria]!==undefined) counts[f.categoria]++; });
   chartFil.data.datasets[0].data = [counts.aceite, counts.aire, counts.habitaculos, counts.combustible];
+  // update labels according to current language
+  if(chartFil.data){
+    chartFil.data.labels = getCategoryLabels();
+  }
   chartFil.update();
 }
 
@@ -314,6 +330,11 @@ LANGS.it.modal = { editMaterial: 'Modifica materiale', editFiltro: 'Modifica fil
 LANGS.es.confirm = { deleteMaterial: '¿Eliminar material?', deleteFiltro: '¿Eliminar filtro?' };
 LANGS.en.confirm = { deleteMaterial: 'Delete material?', deleteFiltro: 'Delete filter?' };
 LANGS.it.confirm = { deleteMaterial: 'Eliminare il materiale?', deleteFiltro: 'Eliminare il filtro?' };
+
+// Traducciones de categorías (clave => etiqueta traducida)
+LANGS.es.categories = { aceite: 'Aceite', aire: 'Aire', habitaculos: 'Habitáculos', combustible: 'Combustible' };
+LANGS.en.categories = { aceite: 'Oil', aire: 'Air', habitaculos: 'Cabin', combustible: 'Fuel' };
+LANGS.it.categories = { aceite: 'Olio', aire: 'Aria', habitaculos: 'Abitacolo', combustible: 'Combustibile' };
 function applyLang(){
   const current = langSelector && langSelector.value ? langSelector.value : (localStorage.getItem('almacen_lang') || 'es');
   const L = LANGS[current] || LANGS.es;
@@ -359,12 +380,27 @@ function applyLang(){
   // modal buttons and close
   const modalSave = document.getElementById('modal_save'); if(modalSave) modalSave.textContent = LANGS[current].modal ? LANGS[current].modal.save : L.save;
   const modalClose = document.getElementById('modal_close'); if(modalClose) modalClose.textContent = LANGS[current].modal ? LANGS[current].modal.close : 'Cerrar';
+
+  // translate category select options (preserve values)
+  const sel = document.getElementById('fil_cat');
+  if(sel){
+    const cats = (LANGS[current] && LANGS[current].categories) ? LANGS[current].categories : LANGS.es.categories;
+    const prev = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      opt.text = cats[opt.value] || opt.value;
+    });
+    // restore previous selection if possible
+    sel.value = prev;
+  }
+  // update charts labels after language change
+  updateChartFiltros();
 }
 
 // Inicializar selector de idioma y aplicar idioma por defecto
 if(langSelector){
   Object.keys(LANGS).forEach(l=>{ const o = el('option'); o.value = l; o.textContent = l.toUpperCase(); langSelector.appendChild(o); });
-  langSelector.value = 'es';
+  const storedLang = localStorage.getItem('almacen_lang') || 'es';
+  langSelector.value = storedLang;
   langSelector.onchange = applyLang;
   applyLang();
 }
