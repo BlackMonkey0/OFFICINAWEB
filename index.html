@@ -22,6 +22,10 @@
       <button id="nav_filtros" onclick="navigate('filtros')">Filtros</button>
       <button id="nav_notas" onclick="navigate('notas')">Notas</button>
     </nav>
+      <div class="sidebar-section">
+        <h4 id="side_fil_title">Referencias</h4>
+        <div id="fil_sidebar_list" class="refs-list"></div>
+      </div>
     <div class="footer">
       <small>Almacenamiento: localStorage (sin servidor)</small>
     </div>
@@ -73,6 +77,11 @@
 
         <div class="col card">
           <h3 id="chart_fil_title">Gráfico Filtros por categoría</h3>
+          <div class="chart-controls">
+            <select id="fil_dropdown">
+              <option value="">Todas referencias</option>
+            </select>
+          </div>
           <div class="chart-wrap"><canvas id="chart_filtros"></canvas></div>
         </div>
       </div>

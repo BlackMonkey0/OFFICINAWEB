@@ -20,6 +20,20 @@ const KEY_MAT = 'almacen_materiales_v1';
 const KEY_FIL = 'almacen_filtros_v1';
 const KEY_NOTAS = 'almacen_notas_v1';
 
+// Palette used for the materials chart (repeats if there are more labels than colors)
+const MATERIAL_COLORS = [
+  '#4e79a7', // blue
+  '#f28e2b', // orange
+  '#e15759', // red
+  '#76b7b2', // teal
+  '#59a14f', // green
+  '#edc948', // yellow
+  '#b07aa1', // purple
+  '#ff9da7', // pink
+  '#9c755f', // brown
+  '#bab0ac'  // gray
+];
+
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
 function loadAll(){
@@ -221,8 +235,12 @@ function getCategoryLabels(lang){
 
 function updateChartMateriales(){
   if(!chartMat) return;
-  chartMat.data.labels = Object.values(materiales).map(m=>m.ref);
-  chartMat.data.datasets[0].data = Object.values(materiales).map(m=>Number(m.qty)||0);
+  const labels = Object.values(materiales).map(m => m.ref);
+  const data = Object.values(materiales).map(m => Number(m.qty) || 0);
+  chartMat.data.labels = labels;
+  chartMat.data.datasets[0].data = data;
+  // Assign a color per label using the MATERIAL_COLORS palette (wrap if needed)
+  chartMat.data.datasets[0].backgroundColor = labels.map((_, i) => MATERIAL_COLORS[i % MATERIAL_COLORS.length]);
   chartMat.update();
 }
 
@@ -422,3 +440,19 @@ document.addEventListener('click', (e)=>{
     if(filtros[id]) return deleteFiltro(id);
   }
 });
+fetch("https://script.google.com/macros/s/AKfycbweA-ym692XqARpQdMuh1v7hYQrHn18n7ixBhRB9Y1C93nQkh8Mp3R9B_x5ccLQdAgh/exec")
+  .then(r => r.json())
+  .then(data => {
+    console.log("Productos:", data);
+    // Aquí los muestras en tu HTML
+  });
+function actualizarStock(id, nuevoStock) {
+  fetch("https://script.google.com/macros/s/AKfycbweA-ym692XqARpQdMuh1v7hYQrHn18n7ixBhRB9Y1C93nQkh8Mp3R9B_x5ccLQdAgh/exec", {
+    method: "POST",
+    body: new URLSearchParams({
+      id: id,
+      stock: nuevoStock
+    })
+  })
+  .then(() => alert("Stock actualizado"));
+}
