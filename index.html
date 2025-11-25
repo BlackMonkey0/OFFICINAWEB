@@ -1,105 +1,125 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gestión Taller - Firebase</title>
-<link rel="stylesheet" href="styles.css" />
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gestión Taller - Firebase</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Chart.js (global) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<aside class="sidebar">
-  <img src="logo-movil-small.png" alt="Logo Almacén Taller" class="logo"/>
-  <h2>GESTIÓN TALLER</h2>
-  <div class="lang">
-    <select id="lang_selector"></select>
-  </div>
-  <nav>
-    <button id="nav_dashboard" onclick="navigate('dashboard')">Dashboard</button>
-    <button id="nav_materiales" onclick="navigate('materiales')">Materiales</button>
-    <button id="nav_filtros" onclick="navigate('filtros')">Filtros</button>
-    <button id="nav_notas" onclick="navigate('notas')">Notas</button>
-  </nav>
-  <div class="footer">
-    <small>Almacenamiento: Firebase Realtime Database</small>
-  </div>
-</aside>
-
-<main class="main">
-  <section id="dashboard" class="page">
-    <div class="row">
-      <div class="col card">
-        <h3 id="mat_title">Materiales</h3>
-        <table id="mat_table">
-          <thead><tr><th>Referencia</th><th>Cantidad</th><th>Acciones</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="add">
-          <input id="mat_ref" placeholder="Referencia"/>
-          <input id="mat_qty" type="number" placeholder="Cantidad" />
-          <button id="mat_add" class="btn-add">Añadir</button>
-        </div>
-      </div>
-      <div class="col card">
-        <h3 id="chart_mat_title">Gráfico Materiales</h3>
-        <div class="chart-wrap"><canvas id="chart_materiales"></canvas></div>
-      </div>
+  <aside class="sidebar">
+    <img src="logo-movil-small.png" alt="Logo Almacén Taller" class="logo"/>
+    <h2>GESTIÓN TALLER</h2>
+    <div class="lang">
+      <select id="lang_selector"></select>
     </div>
+    <nav>
+      <button id="nav_dashboard" onclick="navigate('dashboard')">Dashboard</button>
+      <button id="nav_materiales" onclick="navigate('materiales')">Materiales</button>
+      <button id="nav_filtros" onclick="navigate('filtros')">Filtros</button>
+      <button id="nav_notas" onclick="navigate('notas')">Notas</button>
+    </nav>
+    <div class="sidebar-section">
+      <h4 id="side_fil_title">Referencias</h4>
+      <div id="fil_sidebar_list" class="refs-list"></div>
+    </div>
+    <div class="footer">
+      <small>Almacenamiento: Firebase Realtime Database</small>
+    </div>
+  </aside>
 
-    <div class="row">
-      <div class="col card">
-        <h3 id="fil_title">Filtros</h3>
-        <table id="fil_table">
-          <thead><tr><th>Ref</th><th>Marca</th><th>Modelo</th><th>Categoría</th><th>Cantidad</th><th>Acciones</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="add">
-          <input id="fil_ref" placeholder="Referencia"/>
-          <input id="fil_brand" placeholder="Marca"/>
-          <input id="fil_model" placeholder="Modelo"/>
-          <input id="fil_qty" type="number" placeholder="Cantidad" value="0" />
-          <select id="fil_cat">
-            <option value="aceite">aceite</option>
-            <option value="aire">aire</option>
-            <option value="habitaculos">habitaculos</option>
-            <option value="combustible">combustible</option>
-          </select>
-          <button id="fil_add" class="btn-add">Añadir filtro</button>
+  <main class="main">
+    <section id="dashboard" class="page">
+      <div class="row">
+        <div class="col card">
+          <h3 id="mat_title">Materiales</h3>
+          <table id="mat_table">
+            <thead><tr><th>Referencia</th><th>Cantidad</th><th>Acciones</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="add">
+            <input id="mat_ref" placeholder="Referencia"/>
+            <input id="mat_qty" type="number" placeholder="Cantidad" />
+            <button id="mat_add" class="btn-add">Añadir</button>
+          </div>
+        </div>
+
+        <div class="col card">
+          <h3 id="chart_mat_title">Gráfico Materiales</h3>
+          <div class="chart-wrap"><canvas id="chart_materiales"></canvas></div>
         </div>
       </div>
 
-      <div class="col card">
-        <h3 id="chart_fil_title">Gráfico Filtros por categoría</h3>
-        <div class="chart-wrap"><canvas id="chart_filtros"></canvas></div>
-      </div>
-    </div>
+      <div class="row">
+        <div class="col card">
+          <h3 id="fil_title">Filtros</h3>
+          <table id="fil_table">
+            <thead><tr><th>Ref</th><th>Marca</th><th>Modelo</th><th>Categoría</th><th>Cantidad</th><th>Acciones</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="add">
+            <input id="fil_ref" placeholder="Referencia"/>
+            <input id="fil_brand" placeholder="Marca"/>
+            <input id="fil_model" placeholder="Modelo"/>
+            <input id="fil_qty" type="number" placeholder="Cantidad" value="0" />
+            <select id="fil_cat">
+              <option value="aceite">aceite</option>
+              <option value="aire">aire</option>
+              <option value="habitaculos">habitaculos</option>
+              <option value="combustible">combustible</option>
+            </select>
+            <button id="fil_add" class="btn-add">Añadir filtro</button>
+          </div>
+        </div>
 
-    <div class="row">
-      <div class="col card">
-        <h3 id="not_page_title">Notas</h3>
-        <div id="notas_list"></div>
-        <textarea id="nota_text" placeholder="Añadir nota"></textarea>
-        <button id="nota_save">Guardar nota</button>
+        <div class="col card">
+          <h3 id="chart_fil_title">Gráfico Filtros por categoría</h3>
+          <div class="chart-wrap"><canvas id="chart_filtros"></canvas></div>
+        </div>
       </div>
-    </div>
-  </section>
-</main>
 
-<!-- Modal -->
-<div id="modal" class="modal" style="display:none">
-  <div class="modal-content" role="dialog" aria-modal="true">
-    <h3 id="modal_title">Editar</h3>
-    <div id="modal_body"></div>
-    <div class="modal-actions">
-      <button id="modal_save" class="btn-save">Guardar</button>
-      <button id="modal_close" class="btn-cancel">Cerrar</button>
+      <div class="row">
+        <div class="col card">
+          <h3 id="not_page_title">Notas</h3>
+          <div id="notas_list"></div>
+          <textarea id="nota_text" placeholder="Añadir nota"></textarea>
+          <button id="nota_save" class="btn-save">Guardar nota</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Optional separate pages (kept simple) -->
+    <section id="materiales" class="page" style="display:none">
+      <h1>Materiales (Página)</h1>
+      <div id="materiales_full"></div>
+    </section>
+
+    <section id="filtros" class="page" style="display:none">
+      <h1>Filtros (Página)</h1>
+      <div id="filtros_full"></div>
+    </section>
+
+    <section id="notas" class="page" style="display:none">
+      <h1>Notas</h1>
+      <div id="notas_page_list"></div>
+    </section>
+  </main>
+
+  <!-- Modal (funcionalidad mínima) -->
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-content" role="dialog" aria-modal="true">
+      <h3 id="modal_title">Editar</h3>
+      <div id="modal_body"></div>
+      <div class="modal-actions">
+        <button id="modal_save" class="btn-save">Guardar</button>
+        <button id="modal_close" class="btn-cancel">Cerrar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Script -->
-<script type="module" src="script.js"></script>
-
+  <!-- script.js como módulo -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
