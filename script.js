@@ -12,7 +12,7 @@ const firebaseConfig = {
   authDomain: "officinastock.firebaseapp.com",
   databaseURL: "https://officinastock-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "officinastock",
-  storageBucket: "officinastock.firebasedestorage.app",
+  storageBucket: "officinastock.firebasestorage.app",
   messagingSenderId: "616030382400",
   appId: "1:616030382400:web:24d9266f1f0fb75464f2a5"
 };
@@ -49,18 +49,34 @@ const LANGS = {
   it: { materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina" }
 };
 const langSelector = $('#lang_selector');
+let currentLang = localStorage.getItem('almacen_lang') || 'es'; // Variable global para el idioma actual
+
 if(langSelector){
   Object.keys(LANGS).forEach(l => { const o = el('option'); o.value = l; o.textContent = l.toUpperCase(); langSelector.appendChild(o); });
-  langSelector.value = localStorage.getItem('almacen_lang') || 'es';
+  langSelector.value = currentLang;
   langSelector.onchange = applyLang;
 }
+
+// Función central para aplicar el idioma y re-renderizar
 function applyLang(){
-  const cur = langSelector?.value || 'es';
-  localStorage.setItem('almacen_lang', cur);
-  $('#mat_title').textContent = LANGS[cur].materials;
-  $('#fil_title').textContent = LANGS[cur].filters;
-  $('#not_page_title').textContent = LANGS[cur].notas;
-  document.querySelectorAll('.btn-add').forEach(b => b.textContent = LANGS[cur].add);
+  currentLang = langSelector?.value || 'es';
+  localStorage.setItem('almacen_lang', currentLang);
+
+  const lang = LANGS[currentLang];
+  $('#mat_title').textContent = lang.materials;
+  $('#fil_title').textContent = lang.filters;
+  $('#not_page_title').textContent = lang.notas;
+  document.querySelectorAll('.btn-add').forEach(b => b.textContent = lang.add);
+  
+  // CORRECCIÓN: Volver a renderizar las tablas para que los botones de Edit/Delete tengan el texto traducido.
+  renderAll(); 
+}
+
+// Función para renderizar todo (útil al cambiar de idioma)
+function renderAll(){
+    renderMateriales(lastMatData);
+    renderFiltros(lastFilData);
+    renderNotas(lastNotData);
 }
 
 // ---- DATA CACHE (ultimos dumps) ----
@@ -74,14 +90,17 @@ function renderMateriales(data){
   const tbody = $('#mat_table tbody');
   if(!tbody) return;
   tbody.innerHTML = '';
+  
+  const lang = LANGS[currentLang]; // Obtener las etiquetas traducidas
+
   Object.entries(data || {}).forEach(([id, item]) => {
     const tr = el('tr');
     tr.innerHTML = `
       <td>${escapeHtml(item.ref)}</td>
       <td>${Number(item.qty) || 0}</td>
       <td>
-        <button class="btn-edit" data-id="${id}">Editar</button>
-        <button class="btn-delete" data-id="${id}">Eliminar</button>
+        <button class="btn-edit" data-id="${id}">${lang.edit}</button>
+        <button class="btn-delete" data-id="${id}">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -97,6 +116,9 @@ function renderFiltros(data){
   const tbody = $('#fil_table tbody');
   if(!tbody) return;
   tbody.innerHTML = '';
+
+  const lang = LANGS[currentLang]; // Obtener las etiquetas traducidas
+
   Object.entries(data || {}).forEach(([id, item])=>{
     const tr = el('tr');
     tr.innerHTML = `
@@ -106,8 +128,8 @@ function renderFiltros(data){
       <td>${escapeHtml(item.categoria)}</td>
       <td>${Number(item.qty)||0}</td>
       <td>
-        <button class="btn-edit" data-id="${id}">Editar</button>
-        <button class="btn-delete" data-id="${id}">Eliminar</button>
+        <button class="btn-edit" data-id="${id}">${lang.edit}</button>
+        <button class="btn-delete" data-id="${id}">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -184,19 +206,20 @@ window.editFiltro = function(id){
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if(!btn) return;
-  const parentTr = btn.closest('tr');
-  // detectar botones por texto o data (si quieres puedes adaptar)
-  if(btn.textContent === 'Eliminar' || btn.classList.contains('btn-delete')){
-    const id = btn.dataset.id || (parentTr && parentTr.querySelector('.btn-delete') && parentTr.querySelector('.btn-delete').dataset.id);
-    // our markup sets data-id on the buttons in render functions below, but fallback to attribute:
-    if(btn.dataset.id) {
-      // determine whether it's material or filtro by searching in lastMatData
-      const idVal = btn.dataset.id;
+  
+  // CORRECCIÓN CLAVE: Usar clases en lugar de textContent para independencia del idioma
+  const idVal = btn.dataset.id;
+  if (!idVal) return; // Se requiere un ID para cualquier acción
+
+  if(btn.classList.contains('btn-delete')){
       if(lastMatData && lastMatData[idVal]) return deleteMaterial(idVal);
       if(lastFilData && lastFilData[idVal]) return deleteFiltro(idVal);
-    }
   }
-  // handle edit buttons if any (we also attach onclick in markup for clarity)
+  
+  if(btn.classList.contains('btn-edit')){
+      if(lastMatData && lastMatData[idVal]) return editMaterial(idVal);
+      if(lastFilData && lastFilData[idVal]) return editFiltro(idVal);
+  }
 });
 
 // ---- REALTIME LISTENERS ----
@@ -261,6 +284,7 @@ window.onload = function(){
   if(filAdd) filAdd.onclick = window.addFiltro;
   const notaSave = document.getElementById('nota_save');
   if(notaSave) notaSave.onclick = window.addNota;
-  // keep language applied
-  applyLang();
+  
+  // keep language applied - Esto llama a renderAll() internamente
+  applyLang(); 
 };
