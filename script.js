@@ -1,10 +1,12 @@
-// script.js - sincronización en tiempo real con Firebase y Charts
+// script.js (módulo) - sincronización en tiempo real con Firebase + charts
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-database.js";
-import Chart from "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.esm.min.js";
+// ---- IMPORTS FIREBASE (v11.x) ----
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import {
+  getDatabase, ref, push, onValue, remove, update
+} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
-// ==================== CONFIG FIREBASE ====================
+// ---- CONFIGURACIÓN FIREBASE (usa tu config) ----
 const firebaseConfig = {
   apiKey: "AIzaSyBzxk8viz1uTuyw5kaKJKoHiwBIVp2Q8II",
   authDomain: "officinastock.firebaseapp.com",
@@ -18,142 +20,221 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Referencias
-const matRef = ref(db, 'materiales');
-const filRef = ref(db, 'filtros');
-const notRef = ref(db, 'notas');
+// ---- REFERENCIAS ----
+const matRef = ref(db, "materiales");
+const filRef = ref(db, "filtros");
+const notRef = ref(db, "notas");
 
-// ==================== UTIL ====================
+// ---- UTILIDADES DOM / escape ----
 function $(q){ return document.querySelector(q); }
 function el(t){ return document.createElement(t); }
 function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-function navigate(page){
-  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
-  const elPage = document.getElementById(page);
-  if(elPage) elPage.style.display='block';
-}
 
-// ==================== LANGS ====================
+// ---- NAVEGACIÓN (definida globalmente porque HTML usa onclick inline) ----
+window.navigate = function(page){
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  const elPage = document.getElementById(page);
+  if(elPage) elPage.style.display = 'block';
+  // update charts when showing dashboard
+  if(page === 'dashboard'){
+    updateChartMateriales(lastMatData);
+    updateChartFiltros(lastFilData);
+  }
+};
+
+// ---- LANGS (mantén simple) ----
 const LANGS = {
-  es: { materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar", qty:"Cantidad", ref:"Referencia", brand:"Marca", model:"Modelo", category:"Categoría", modal:{save:"Guardar", close:"Cerrar"} },
-  en: { materials:"Materials", filters:"Filters", notas:"Notes", add:"Add", edit:"Edit", delete:"Delete", qty:"Quantity", ref:"Reference", brand:"Brand", model:"Model", category:"Category", modal:{save:"Save", close:"Close"} },
-  it: { materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina", qty:"Quantità", ref:"Riferimento", brand:"Marca", model:"Modello", category:"Categoria", modal:{save:"Salva", close:"Chiudi"} }
+  es: { materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar" },
+  en: { materials:"Materials", filters:"Filters", notas:"Notes", add:"Add", edit:"Edit", delete:"Delete" },
+  it: { materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina" }
 };
 const langSelector = $('#lang_selector');
-
-function applyLang(){
-  const current = langSelector?.value || 'es';
-  localStorage.setItem('almacen_lang', current);
-  $('#mat_title').textContent = LANGS[current].materials;
-  $('#fil_title').textContent = LANGS[current].filters;
-  $('#not_page_title').textContent = LANGS[current].notas;
-  document.querySelectorAll('.btn-add').forEach(b=>b.textContent = LANGS[current].add);
-}
-
-// Inicializar selector
 if(langSelector){
-  Object.keys(LANGS).forEach(l=>{ const o=el('option'); o.value=l; o.textContent=l.toUpperCase(); langSelector.appendChild(o); });
-  langSelector.value = localStorage.getItem('almacen_lang')||'es';
+  Object.keys(LANGS).forEach(l => { const o = el('option'); o.value = l; o.textContent = l.toUpperCase(); langSelector.appendChild(o); });
+  langSelector.value = localStorage.getItem('almacen_lang') || 'es';
   langSelector.onchange = applyLang;
-  applyLang();
+}
+function applyLang(){
+  const cur = langSelector?.value || 'es';
+  localStorage.setItem('almacen_lang', cur);
+  $('#mat_title').textContent = LANGS[cur].materials;
+  $('#fil_title').textContent = LANGS[cur].filters;
+  $('#not_page_title').textContent = LANGS[cur].notas;
+  document.querySelectorAll('.btn-add').forEach(b => b.textContent = LANGS[cur].add);
 }
 
-// ==================== MATERIAL ====================
-let chartMat = null;
+// ---- DATA CACHE (ultimos dumps) ----
+let lastMatData = {};
+let lastFilData = {};
+let lastNotData = {};
+
+// ---- RENDER: MATERIALES ----
 function renderMateriales(data){
-  const tbody = $('#mat_table tbody'); tbody.innerHTML='';
-  Object.entries(data||{}).forEach(([id,item])=>{
-    const tr=el('tr');
-    tr.innerHTML=`<td>${escapeHtml(item.ref)}</td><td>${item.qty||0}</td>
-      <td><button onclick="editMaterial('${id}')">${LANGS[langSelector.value].edit}</button>
-          <button onclick="deleteMaterial('${id}')">${LANGS[langSelector.value].delete}</button></td>`;
+  lastMatData = data || {};
+  const tbody = $('#mat_table tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  Object.entries(data || {}).forEach(([id, item]) => {
+    const tr = el('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(item.ref)}</td>
+      <td>${Number(item.qty) || 0}</td>
+      <td>
+        <button class="btn-edit" data-id="${id}">Editar</button>
+        <button class="btn-delete" data-id="${id}">Eliminar</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+  // full list page
+  const full = $('#materiales_full');
+  if(full) full.innerHTML = Object.entries(data || {}).map(([id,it])=>`${escapeHtml(it.ref)} — ${Number(it.qty)||0}`).join('<br>');
   updateChartMateriales(data);
 }
 
-window.addMaterial = () => {
-  const refVal = $('#mat_ref').value.trim();
-  const qtyVal = parseInt($('#mat_qty').value)||0;
-  if(!refVal) return alert('Referencia vacía');
-  push(matRef,{ ref: refVal, qty: qtyVal });
-  $('#mat_ref').value=''; $('#mat_qty').value='';
-};
-
-window.deleteMaterial = (id) => remove(ref(db,'materiales/'+id));
-window.editMaterial = (id) => {
-  const refVal = prompt('Referencia nueva:');
-  const qtyVal = prompt('Cantidad nueva:');
-  if(refVal!==null && qtyVal!==null) update(ref(db,'materiales/'+id),{ ref: refVal, qty: parseInt(qtyVal)||0 });
-};
-
-onValue(matRef, snapshot => renderMateriales(snapshot.val()));
-
-// ==================== FILTROS ====================
-let chartFil = null;
+// ---- RENDER: FILTROS ----
 function renderFiltros(data){
-  const tbody = $('#fil_table tbody'); tbody.innerHTML='';
-  Object.entries(data||{}).forEach(([id,it])=>{
+  lastFilData = data || {};
+  const tbody = $('#fil_table tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  Object.entries(data || {}).forEach(([id, item])=>{
     const tr = el('tr');
-    tr.innerHTML = `<td>${it.ref}</td><td>${it.brand}</td><td>${it.model}</td><td>${it.categoria}</td><td>${it.qty||0}</td>
-      <td><button onclick="editFiltro('${id}')">${LANGS[langSelector.value].edit}</button>
-          <button onclick="deleteFiltro('${id}')">${LANGS[langSelector.value].delete}</button></td>`;
+    tr.innerHTML = `
+      <td>${escapeHtml(item.ref)}</td>
+      <td>${escapeHtml(item.brand)}</td>
+      <td>${escapeHtml(item.model)}</td>
+      <td>${escapeHtml(item.categoria)}</td>
+      <td>${Number(item.qty)||0}</td>
+      <td>
+        <button class="btn-edit" data-id="${id}">Editar</button>
+        <button class="btn-delete" data-id="${id}">Eliminar</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+  const full = $('#filtros_full');
+  if(full) full.innerHTML = Object.entries(data || {}).map(([id,it])=>`${escapeHtml(it.ref)} — ${escapeHtml(it.brand)} — ${escapeHtml(it.model)} — ${escapeHtml(it.categoria)} — ${Number(it.qty)||0}`).join('<br>');
   updateChartFiltros(data);
 }
 
-window.addFiltro = () => {
+// ---- RENDER: NOTAS ----
+function renderNotas(data){
+  lastNotData = data || {};
+  const div = $('#notas_list'); if(!div) return;
+  div.innerHTML = '';
+  Object.entries(data || {}).forEach(([id,n])=>{
+    const d = el('div'); d.className = 'nota'; d.textContent = n.text; div.appendChild(d);
+  });
+}
+
+// ---- EVENTS: Añadir / editar / borrar materiales ----
+window.addMaterial = function(){
+  const refVal = $('#mat_ref').value.trim();
+  const qty = parseInt($('#mat_qty').value) || 0;
+  if(!refVal) return alert('Referencia vacía');
+  push(matRef, { ref: refVal, qty });
+  $('#mat_ref').value = ''; $('#mat_qty').value = '';
+};
+
+window.addFiltro = function(){
   const refVal = $('#fil_ref').value.trim();
   const brand = $('#fil_brand').value.trim();
   const model = $('#fil_model').value.trim();
   const cat = $('#fil_cat').value;
-  const qty = parseInt($('#fil_qty').value)||0;
+  const qty = parseInt($('#fil_qty').value) || 0;
   if(!refVal || !brand) return alert('Completa referencia y marca');
-  push(filRef,{ ref: refVal, brand, model, categoria: cat, qty });
-  $('#fil_ref').value=''; $('#fil_brand').value=''; $('#fil_model').value=''; $('#fil_qty').value=0;
+  push(filRef, { ref: refVal, brand, model, categoria: cat, qty });
+  $('#fil_ref').value = ''; $('#fil_brand').value = ''; $('#fil_model').value = ''; $('#fil_qty').value = 0;
 };
-window.deleteFiltro = (id) => remove(ref(db,'filtros/'+id));
-window.editFiltro = (id) => {
-  const refVal = prompt('Referencia nueva:');
-  const brand = prompt('Marca nueva:');
-  const model = prompt('Modelo nuevo:');
-  const cat = prompt('Categoría nueva: aceite/aire/habitaculos/combustible');
-  const qty = prompt('Cantidad nueva:');
-  if(refVal!==null && brand!==null && model!==null && cat!==null && qty!==null){
-    update(ref(db,'filtros/'+id), { ref: refVal, brand, model, categoria: cat, qty: parseInt(qty)||0 });
+
+window.addNota = function(){
+  const txt = $('#nota_text').value.trim();
+  if(!txt) return;
+  push(notRef, { text: txt, ts: Date.now() });
+  $('#nota_text').value = '';
+};
+
+// ---- ELIMINAR ----
+window.deleteMaterial = function(id){
+  remove(ref(db, 'materiales/' + id));
+};
+window.deleteFiltro = function(id){
+  remove(ref(db, 'filtros/' + id));
+};
+
+// ---- EDICIÓN SIMPLE (prompts para no complicar modal) ----
+window.editMaterial = function(id){
+  const item = lastMatData[id] || { ref: '', qty: 0 };
+  const newRef = prompt('Referencia:', item.ref);
+  if(newRef === null) return;
+  const newQty = prompt('Cantidad:', item.qty || 0);
+  if(newQty === null) return;
+  update(ref(db,'materiales/'+id), { ref: newRef, qty: parseInt(newQty)||0 });
+};
+window.editFiltro = function(id){
+  const item = lastFilData[id] || { ref:'', brand:'', model:'', categoria:'aceite', qty:0 };
+  const newRef = prompt('Referencia:', item.ref); if(newRef===null) return;
+  const newBrand = prompt('Marca:', item.brand); if(newBrand===null) return;
+  const newModel = prompt('Modelo:', item.model); if(newModel===null) return;
+  const newCat = prompt('Categoría (aceite/aire/habitaculos/combustible):', item.categoria); if(newCat===null) return;
+  const newQty = prompt('Cantidad:', item.qty||0); if(newQty===null) return;
+  update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
+};
+
+// ---- EVENT DELEGATION para botones Edit / Delete en tablas ----
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const parentTr = btn.closest('tr');
+  // detectar botones por texto o data (si quieres puedes adaptar)
+  if(btn.textContent === 'Eliminar' || btn.classList.contains('btn-delete')){
+    const id = btn.dataset.id || (parentTr && parentTr.querySelector('.btn-delete') && parentTr.querySelector('.btn-delete').dataset.id);
+    // our markup sets data-id on the buttons in render functions below, but fallback to attribute:
+    if(btn.dataset.id) {
+      // determine whether it's material or filtro by searching in lastMatData
+      const idVal = btn.dataset.id;
+      if(lastMatData && lastMatData[idVal]) return deleteMaterial(idVal);
+      if(lastFilData && lastFilData[idVal]) return deleteFiltro(idVal);
+    }
   }
-};
+  // handle edit buttons if any (we also attach onclick in markup for clarity)
+});
 
-onValue(filRef, snapshot => renderFiltros(snapshot.val()));
+// ---- REALTIME LISTENERS ----
+onValue(matRef, snapshot => {
+  const data = snapshot.val() || {};
+  // convert numeric qty to numbers
+  Object.keys(data).forEach(k => { if(data[k] && data[k].qty!==undefined) data[k].qty = Number(data[k].qty); });
+  renderMateriales(data);
+});
 
-// ==================== NOTAS ====================
-function renderNotas(data){
-  const div = $('#notas_list'); div.innerHTML='';
-  Object.entries(data||{}).forEach(([id,n])=>{
-    const d = el('div'); d.className='nota'; d.textContent = n.text; div.appendChild(d);
-  });
-}
+onValue(filRef, snapshot => {
+  const data = snapshot.val() || {};
+  Object.keys(data).forEach(k => { if(data[k] && data[k].qty!==undefined) data[k].qty = Number(data[k].qty); });
+  renderFiltros(data);
+});
 
-window.addNota = () => {
-  const txt = $('#nota_text').value.trim(); if(!txt) return;
-  push(notRef,{ text: txt, ts: Date.now() });
-  $('#nota_text').value='';
-};
-onValue(notRef, snapshot => renderNotas(snapshot.val()));
+onValue(notRef, snapshot => {
+  const data = snapshot.val() || {};
+  renderNotas(data);
+});
 
-// ==================== CHARTS ====================
+// ---- CHARTS ----
+let chartMat = null, chartFil = null;
 function createCharts(){
-  const ctxM = $('#chart_materiales').getContext('2d');
-  chartMat = new Chart(ctxM,{ type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:[] }] }, options:{ responsive:true, maintainAspectRatio:false } });
-  const ctxF = $('#chart_filtros').getContext('2d');
-  chartFil = new Chart(ctxF,{ type:'doughnut', data:{ labels:['aceite','aire','habitaculos','combustible'], datasets:[{ data:[0,0,0,0], backgroundColor:['#f28e2b','#4e79a7','#e15759','#59a14f'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+  const ctxM = document.getElementById('chart_materiales')?.getContext('2d');
+  const ctxF = document.getElementById('chart_filtros')?.getContext('2d');
+  if(ctxM){
+    chartMat = new Chart(ctxM, { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:[] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+  }
+  if(ctxF){
+    chartFil = new Chart(ctxF, { type:'doughnut', data:{ labels:['Aceite','Aire','Habitáculos','Combustible'], datasets:[{ data:[0,0,0,0], backgroundColor:['#f28e2b','#4e79a7','#e15759','#59a14f'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+  }
 }
 
 function updateChartMateriales(data){
   if(!chartMat) return;
-  const labels = Object.values(data||{}).map(m=>m.ref);
-  const values = Object.values(data||{}).map(m=>m.qty||0);
+  const labels = Object.values(data||{}).map(it => it.ref);
+  const values = Object.values(data||{}).map(it => Number(it.qty)||0);
   chartMat.data.labels = labels;
   chartMat.data.datasets[0].data = values;
   chartMat.data.datasets[0].backgroundColor = labels.map((_,i)=>['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'][i%10]);
@@ -163,131 +244,23 @@ function updateChartMateriales(data){
 function updateChartFiltros(data){
   if(!chartFil) return;
   const counts = { aceite:0, aire:0, habitaculos:0, combustible:0 };
-  Object.values(data||{}).forEach(f=>{ if(f.categoria && counts[f.categoria]!==undefined) counts[f.categoria]++; });
+  Object.values(data||{}).forEach(f => { if(f && f.categoria && counts[f.categoria]!==undefined) counts[f.categoria]++; });
   chartFil.data.datasets[0].data = [counts.aceite, counts.aire, counts.habitaculos, counts.combustible];
   chartFil.update();
 }
 
-// ==================== INIT ====================
-window.onload = () => {
+// ---- INIT ----
+window.onload = function(){
   navigate('dashboard');
   createCharts();
-};
 
-/* ---------------------------
-NAVEGACIÓN ENTRE PÁGINAS
----------------------------- */
-window.navigate = function(page){
-document.querySelectorAll(".page").forEach(p => p.style.display = "none");
-document.getElementById(page).style.display = "block";
-};
-
-/* ---------------------------
-CARGA DE FIREBASE
----------------------------- */
-import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js](https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js)";
-import {
-getDatabase, ref, push, onValue, remove
-} from "[https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js](https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js)";
-
-const firebaseConfig = {
-apiKey: "AIzaSyBzxk8viz1uTuyw5kaKJKoHiwBIVp2Q8II",
-authDomain: "officinastock.firebaseapp.com",
-databaseURL: "[https://officinastock-default-rtdb.europe-west1.firebasedatabase.app](https://officinastock-default-rtdb.europe-west1.firebasedatabase.app)",
-projectId: "officinastock",
-storageBucket: "officinastock.firebasestorage.app",
-messagingSenderId: "616030382400",
-appId: "1:616030382400:web:24d9266f1f0fb75464f2a5",
-measurementId: "G-V1TMXJ7Z3D"
-};
-
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-
-const matRef = ref(db, "materiales");
-const filRef = ref(db, "filtros");
-
-/* ---------------------------
-MATERIAL — LECTURA
----------------------------- */
-onValue(matRef, snap => {
-const data = snap.val() || {};
-const tbody = document.querySelector("#mat_table tbody");
-tbody.innerHTML = "";
-
-Object.entries(data).forEach(([id, item]) => {
-const tr = document.createElement("tr");
-tr.innerHTML = `       <td>${item.ref}</td>       <td>${item.qty}</td>       <td>         <button onclick="eliminarMat('${id}')">Eliminar</button>       </td>
-    `;
-tbody.appendChild(tr);
-});
-});
-
-/* ---------------------------
-FILTROS — LECTURA
----------------------------- */
-onValue(filRef, snap => {
-const data = snap.val() || {};
-const tbody = document.querySelector("#fil_table tbody");
-tbody.innerHTML = "";
-
-Object.entries(data).forEach(([id, item]) => {
-const tr = document.createElement("tr");
-tr.innerHTML = `       <td>${item.ref}</td>       <td>${item.brand}</td>       <td>${item.model}</td>       <td>${item.cat}</td>       <td>${item.qty}</td>       <td>         <button onclick="eliminarFil('${id}')">Eliminar</button>       </td>
-    `;
-tbody.appendChild(tr);
-});
-});
-
-/* ---------------------------
-AÑADIR MATERIAL
----------------------------- */
-document.getElementById("mat_add").onclick = () => {
-const refVal = document.getElementById("mat_ref").value.trim();
-const qtyVal = parseInt(document.getElementById("mat_qty").value) || 0;
-
-if (refVal) {
-push(matRef, { ref: refVal, qty: qtyVal });
-}
-
-document.getElementById("mat_ref").value = "";
-document.getElementById("mat_qty").value = "";
-};
-
-/* ---------------------------
-AÑADIR FILTRO
----------------------------- */
-document.getElementById("fil_add").onclick = () => {
-const refVal   = document.getElementById("fil_ref").value.trim();
-const brand    = document.getElementById("fil_brand").value.trim();
-const model    = document.getElementById("fil_model").value.trim();
-const cat      = document.getElementById("fil_cat").value;
-const qty      = parseInt(document.getElementById("fil_qty").value) || 0;
-
-if (refVal) {
-push(filRef, { ref: refVal, brand, model, cat, qty });
-}
-
-document.getElementById("fil_ref").value = "";
-document.getElementById("fil_brand").value = "";
-document.getElementById("fil_model").value = "";
-document.getElementById("fil_qty").value = 0;
-};
-
-/* ---------------------------
-ELIMINAR
----------------------------- */
-window.eliminarMat = (id) => {
-remove(ref(db, "materiales/" + id));
-};
-
-window.eliminarFil = (id) => {
-remove(ref(db, "filtros/" + id));
-};
-
-/* ---------------------------
-ARRANCAR
----------------------------- */
-window.onload = () => {
-navigate("dashboard");
+  // Wire up UI buttons to exported functions (the HTML uses inline onclicks but we also attach here)
+  const matAdd = document.getElementById('mat_add');
+  if(matAdd) matAdd.onclick = window.addMaterial;
+  const filAdd = document.getElementById('fil_add');
+  if(filAdd) filAdd.onclick = window.addFiltro;
+  const notaSave = document.getElementById('nota_save');
+  if(notaSave) notaSave.onclick = window.addNota;
+  // keep language applied
+  applyLang();
 };
