@@ -173,3 +173,121 @@ window.onload = () => {
   navigate('dashboard');
   createCharts();
 };
+
+/* ---------------------------
+NAVEGACIÓN ENTRE PÁGINAS
+---------------------------- */
+window.navigate = function(page){
+document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+document.getElementById(page).style.display = "block";
+};
+
+/* ---------------------------
+CARGA DE FIREBASE
+---------------------------- */
+import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js](https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js)";
+import {
+getDatabase, ref, push, onValue, remove
+} from "[https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js](https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js)";
+
+const firebaseConfig = {
+apiKey: "AIzaSyBzxk8viz1uTuyw5kaKJKoHiwBIVp2Q8II",
+authDomain: "officinastock.firebaseapp.com",
+databaseURL: "[https://officinastock-default-rtdb.europe-west1.firebasedatabase.app](https://officinastock-default-rtdb.europe-west1.firebasedatabase.app)",
+projectId: "officinastock",
+storageBucket: "officinastock.firebasestorage.app",
+messagingSenderId: "616030382400",
+appId: "1:616030382400:web:24d9266f1f0fb75464f2a5",
+measurementId: "G-V1TMXJ7Z3D"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const matRef = ref(db, "materiales");
+const filRef = ref(db, "filtros");
+
+/* ---------------------------
+MATERIAL — LECTURA
+---------------------------- */
+onValue(matRef, snap => {
+const data = snap.val() || {};
+const tbody = document.querySelector("#mat_table tbody");
+tbody.innerHTML = "";
+
+Object.entries(data).forEach(([id, item]) => {
+const tr = document.createElement("tr");
+tr.innerHTML = `       <td>${item.ref}</td>       <td>${item.qty}</td>       <td>         <button onclick="eliminarMat('${id}')">Eliminar</button>       </td>
+    `;
+tbody.appendChild(tr);
+});
+});
+
+/* ---------------------------
+FILTROS — LECTURA
+---------------------------- */
+onValue(filRef, snap => {
+const data = snap.val() || {};
+const tbody = document.querySelector("#fil_table tbody");
+tbody.innerHTML = "";
+
+Object.entries(data).forEach(([id, item]) => {
+const tr = document.createElement("tr");
+tr.innerHTML = `       <td>${item.ref}</td>       <td>${item.brand}</td>       <td>${item.model}</td>       <td>${item.cat}</td>       <td>${item.qty}</td>       <td>         <button onclick="eliminarFil('${id}')">Eliminar</button>       </td>
+    `;
+tbody.appendChild(tr);
+});
+});
+
+/* ---------------------------
+AÑADIR MATERIAL
+---------------------------- */
+document.getElementById("mat_add").onclick = () => {
+const refVal = document.getElementById("mat_ref").value.trim();
+const qtyVal = parseInt(document.getElementById("mat_qty").value) || 0;
+
+if (refVal) {
+push(matRef, { ref: refVal, qty: qtyVal });
+}
+
+document.getElementById("mat_ref").value = "";
+document.getElementById("mat_qty").value = "";
+};
+
+/* ---------------------------
+AÑADIR FILTRO
+---------------------------- */
+document.getElementById("fil_add").onclick = () => {
+const refVal   = document.getElementById("fil_ref").value.trim();
+const brand    = document.getElementById("fil_brand").value.trim();
+const model    = document.getElementById("fil_model").value.trim();
+const cat      = document.getElementById("fil_cat").value;
+const qty      = parseInt(document.getElementById("fil_qty").value) || 0;
+
+if (refVal) {
+push(filRef, { ref: refVal, brand, model, cat, qty });
+}
+
+document.getElementById("fil_ref").value = "";
+document.getElementById("fil_brand").value = "";
+document.getElementById("fil_model").value = "";
+document.getElementById("fil_qty").value = 0;
+};
+
+/* ---------------------------
+ELIMINAR
+---------------------------- */
+window.eliminarMat = (id) => {
+remove(ref(db, "materiales/" + id));
+};
+
+window.eliminarFil = (id) => {
+remove(ref(db, "filtros/" + id));
+};
+
+/* ---------------------------
+ARRANCAR
+---------------------------- */
+window.onload = () => {
+navigate("dashboard");
+};
