@@ -53,7 +53,8 @@ const LANGS = {
       add_mat: "Añadir", add_fil: "Añadir filtro", add_note: "Guardar nota",
       placeholder_ref: "Referencia", placeholder_qty: "Cantidad", placeholder_brand: "Marca", placeholder_model: "Modelo", placeholder_note: "Añadir nota",
       modal_edit: "Editar", page_mat: "Materiales (Página)", page_fil: "Filtros (Página)", page_not: "Notas",
-      cat_aceite: "aceite", cat_aire: "aire", cat_habitaculos: "habitáculos", cat_combustible: "combustible"
+      cat_aceite: "aceite", cat_aire: "aire", cat_habitaculos: "habitáculos", cat_combustible: "combustible",
+      alert_empty_ref: "Referencia vacía", alert_full_fields: "Referencia y Marca requeridos"
     }
   },
   en: { 
@@ -65,7 +66,8 @@ const LANGS = {
       add_mat: "Add", add_fil: "Add Filter", add_note: "Save Note",
       placeholder_ref: "Reference", placeholder_qty: "Quantity", placeholder_brand: "Brand", placeholder_model: "Model", placeholder_note: "Add note",
       modal_edit: "Edit", page_mat: "Materials (Page)", page_fil: "Filters (Page)", page_not: "Notes",
-      cat_aceite: "oil", cat_aire: "air", cat_habitaculos: "cabin", cat_combustible: "fuel"
+      cat_aceite: "oil", cat_aire: "air", cat_habitaculos: "cabin", cat_combustible: "fuel",
+      alert_empty_ref: "Empty reference", alert_full_fields: "Reference and Brand required"
     }
   },
   it: { 
@@ -77,7 +79,8 @@ const LANGS = {
       add_mat: "Aggiungi", add_fil: "Aggiungi filtro", add_note: "Salva nota",
       placeholder_ref: "Riferimento", placeholder_qty: "Quantità", placeholder_brand: "Marca", placeholder_model: "Modello", placeholder_note: "Aggiungi nota",
       modal_edit: "Modifica", page_mat: "Materiali (Pagina)", page_fil: "Filtri (Pagina)", page_not: "Note",
-      cat_aceite: "olio", cat_aire: "aria", cat_habitaculos: "abitacolo", cat_combustible: "carburante"
+      cat_aceite: "olio", cat_aire: "aria", cat_habitaculos: "abitacolo", cat_combustible: "carburante",
+      alert_empty_ref: "Riferimento vuoto", alert_full_fields: "Riferimento e Marca richiesti"
     }
   }
 };
@@ -239,7 +242,7 @@ function renderNotas(data){
 window.addMaterial = function(){
   const refVal = $('#mat_ref').value.trim();
   const qty = parseInt($('#mat_qty').value) || 0;
-  if(!refVal) return alert(LANGS[currentLang].titles.placeholder_ref + ' vacía'); // Traducir alerta
+  if(!refVal) return alert(LANGS[currentLang].titles.alert_empty_ref); // Traducir alerta
   push(matRef, { ref: refVal, qty });
   $('#mat_ref').value = ''; $('#mat_qty').value = '';
 };
@@ -250,7 +253,7 @@ window.addFiltro = function(){
   const model = $('#fil_model_input').value.trim();
   const cat = $('#fil_cat').value;
   const qty = parseInt($('#fil_qty').value) || 0;
-  if(!refVal || !brand) return alert(LANGS[currentLang].titles.placeholder_ref + ' y ' + LANGS[currentLang].titles.placeholder_brand + ' requeridos'); // Traducir alerta
+  if(!refVal || !brand) return alert(LANGS[currentLang].titles.alert_full_fields); // Traducir alerta
   push(filRef, { ref: refVal, brand, model, categoria: cat, qty });
   $('#fil_ref_input').value = ''; $('#fil_brand_input').value = ''; $('#fil_model_input').value = ''; $('#fil_qty').value = 0;
 };
@@ -272,23 +275,24 @@ window.deleteFiltro = function(id){
 
 // ---- EDICIÓN SIMPLE (prompts para no complicar modal) ----
 window.editMaterial = function(id){
+  const t = LANGS[currentLang].titles;
   const item = lastMatData[id] || { ref: '', qty: 0 };
-  const newRef = prompt(LANGS[currentLang].titles.ref + ':', item.ref); // Traducir prompt
+  const newRef = prompt(t.ref + ':', item.ref); 
   if(newRef === null) return;
-  const newQty = prompt(LANGS[currentLang].titles.qty + ':', item.qty || 0); // Traducir prompt
+  const newQty = prompt(t.qty + ':', item.qty || 0); 
   if(newQty === null) return;
   update(ref(db,'materiales/'+id), { ref: newRef, qty: parseInt(newQty)||0 });
 };
 window.editFiltro = function(id){
   const t = LANGS[currentLang].titles;
   const item = lastFilData[id] || { ref:'', brand:'', model:'', categoria:'aceite', qty:0 };
-  const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; // Traducir prompt
-  const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; // Traducir prompt
-  const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; // Traducir prompt
+  const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
+  const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; 
+  const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; 
   // Traducir prompt y lista de opciones
   const catOptions = `${t.cat_aceite}/${t.cat_aire}/${t.cat_habitaculos}/${t.cat_combustible}`;
   const newCat = prompt(`${t.category} (${catOptions}):`, item.categoria); if(newCat===null) return; 
-  const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; // Traducir prompt
+  const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; 
   update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
 };
 
@@ -338,7 +342,6 @@ function createCharts(){
     chartMat = new Chart(ctxM, { type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor:[] }] }, options:{ responsive:true, maintainAspectRatio:false } });
   }
   if(ctxF){
-    // Usamos las etiquetas traducidas al inicializar el gráfico
     const t = LANGS[currentLang].titles;
     const labels = [t.cat_aceite, t.cat_aire, t.cat_habitaculos, t.cat_combustible];
     chartFil = new Chart(ctxF, { type:'doughnut', data:{ labels:labels, datasets:[{ data:[0,0,0,0], backgroundColor:['#f28e2b','#4e79a7','#e15759','#59a14f'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
@@ -360,7 +363,6 @@ function updateChartFiltros(data){
   const counts = { aceite:0, aire:0, habitaculos:0, combustible:0 };
   Object.values(data||{}).forEach(f => { if(f && f.categoria && counts[f.categoria]!==undefined) counts[f.categoria]++; });
   
-  // Actualizar etiquetas del gráfico de filtros al cambiar de idioma
   const t = LANGS[currentLang].titles;
   chartFil.data.labels = [t.cat_aceite, t.cat_aire, t.cat_habitaculos, t.cat_combustible];
   
@@ -372,10 +374,9 @@ function updateChartFiltros(data){
 window.onload = function(){
   navigate('dashboard');
   
-  // La creación de gráficos debe hacerse antes de aplicar el idioma para asegurar que existan.
   createCharts(); 
 
-  // Wire up UI buttons to exported functions (the HTML uses inline onclicks but we also attach here)
+  // Wire up UI buttons to exported functions (la conexión de los botones de añadir)
   const matAdd = document.getElementById('mat_add');
   if(matAdd) matAdd.onclick = window.addMaterial;
   const filAdd = document.getElementById('fil_add');
@@ -383,6 +384,6 @@ window.onload = function(){
   const notaSave = document.getElementById('nota_save');
   if(notaSave) notaSave.onclick = window.addNota;
   
-  // keep language applied - Esto llama a renderAll() internamente y traduce TODO
+  // Esto llama a renderAll() internamente y traduce TODO
   applyLang(); 
 };
