@@ -456,3 +456,58 @@ function actualizarStock(id, nuevoStock) {
   })
   .then(() => alert("Stock actualizado"));
 }
+// Importar Firebase y Realtime Database
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, push, onValue, remove } from "firebase/database";
+
+// Tu configuración de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBzxk8viz1uTuyw5kaKJKoHiwBIVp2Q8II",
+  authDomain: "officinastock.firebaseapp.com",
+  databaseURL: "https://officinastock-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "officinastock",
+  storageBucket: "officinastock.firebasestorage.app",
+  messagingSenderId: "616030382400",
+  appId: "1:616030382400:web:24d9266f1f0fb75464f2a5",
+  measurementId: "G-V1TMXJ7Z3D"
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// Referencia al inventario
+const inventarioRef = ref(database, 'inventario');
+
+// Función para escuchar cambios en tiempo real
+onValue(inventarioRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    actualizarListaInventario(data);
+});
+
+// Función para agregar producto
+export function agregarProducto(nombre, cantidad) {
+    push(inventarioRef, { nombre, cantidad });
+}
+
+// Función para eliminar producto
+export function eliminarProducto(id) {
+    remove(ref(database, 'inventario/' + id));
+}
+
+// Función para actualizar tu HTML
+function actualizarListaInventario(data) {
+    const lista = document.getElementById('lista-inventario');
+    lista.innerHTML = '';
+    Object.keys(data).forEach(key => {
+        const item = document.createElement('li');
+        item.textContent = data[key].nombre + ' - ' + data[key].cantidad;
+
+        const btn = document.createElement('button');
+        btn.textContent = 'Eliminar';
+        btn.onclick = () => eliminarProducto(key);
+
+        item.appendChild(btn);
+        lista.appendChild(item);
+    });
+}
