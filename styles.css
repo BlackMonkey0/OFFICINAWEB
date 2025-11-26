@@ -120,6 +120,7 @@ h2 { margin-top: 0; }
 
 .chart-wrap { height: 260px; }
 
+
 /* ------------------ 4. COMPONENTES: SIDEBAR REFERENCES (Compacto) ------------------ */
 
 .sidebar-section { margin-top: 12px; }
@@ -146,7 +147,7 @@ h2 { margin-top: 0; }
 
 .toggle-refs:hover { background: rgba(255, 255, 255, 0.1); }
 
-/* Lista de Referencias - Oculta por defecto */
+/* Lista de Referencias - Oculta por defecto para ahorrar espacio */
 .refs-list {
     display: none; 
     flex-direction: column;
@@ -214,6 +215,12 @@ h2 { margin-top: 0; }
 /* ------------------ 5. COMPONENTES: TABLES ------------------ */
 
 .table-wrap { overflow-x: auto; }
+
+/* NUEVA CLASE: Compacta la altura de listados largos como Filtros */
+.listado-compacto {
+    max-height: 450px; /* Altura fija para evitar que la página se alargue */
+    overflow-y: auto;
+}
 
 table {
     width: 100%;
