@@ -24,11 +24,22 @@ const db = getDatabase(app);
 const matRef = ref(db, "materiales");
 const filRef = ref(db, "filtros");
 const notRef = ref(db, "notas");
+// NUEVA REFERENCIA
+const histRef = ref(db, "historial_usos"); 
 
 // ---- UTILIDADES DOM / escape ----
 function $(q){ return document.querySelector(q); }
 function el(t){ return document.createElement(t); }
 function escapeHtml(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+// Función de formato de fecha
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString(currentLang, {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
 
 // ---- NAVEGACIÓN (definida globalmente porque HTML usa onclick inline) ----
 window.navigate = function(page){
@@ -42,45 +53,57 @@ window.navigate = function(page){
   }
 };
 
-// ---- LANGS (mantén simple) ----
+// ---- LANGS (incluyendo USE y Historial) ----
 const LANGS = {
   es: { 
-    materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar", save:"Guardar", close:"Cerrar",
+    materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar", save:"Guardar", close:"Cerrar", use:"Usar",
     titles: {
       app: "GESTIÓN TALLER", dashboard: "Dashboard", refs: "Referencias", footer: "Almacenamiento: Firebase Realtime Database",
-      chart_mat: "Gráfico Materiales", chart_fil: "Gráfico Filtros por categoría",
+      chart_mat: "Gráfico Materiales", chart_fil: "Gráfico Filtros por categoría", hist:"Historial de Usos",
       ref: "Referencia", qty: "Cantidad", actions: "Acciones", brand: "Marca", model: "Modelo", category: "Categoría",
-      add_mat: "Añadir", add_fil: "Añadir filtro", add_note: "Guardar nota",
+      add_mat: "Añadir", add_fil: "Añadir filtro", add_note: "Guardar nota", use_fil:"Usar Filtro",
       placeholder_ref: "Referencia", placeholder_qty: "Cantidad", placeholder_brand: "Marca", placeholder_model: "Modelo", placeholder_note: "Añadir nota",
       modal_edit: "Editar", page_mat: "Materiales (Página)", page_fil: "Filtros (Página)", page_not: "Notas",
       cat_aceite: "aceite", cat_aire: "aire", cat_habitaculos: "habitáculos", cat_combustible: "combustible",
-      alert_empty_ref: "Referencia vacía", alert_full_fields: "Referencia y Marca requeridos"
+      alert_empty_ref: "Referencia vacía", alert_full_fields: "Referencia y Marca requeridos", 
+      alert_no_stock: "No hay stock disponible para esta referencia.", 
+      alert_usage_fields: "Marca y Modelo del coche son requeridos.",
+      prompt_car_brand: "Marca del Coche", prompt_car_model: "Modelo del Coche", prompt_used_ref: "Referencia Usada",
+      hist_ref: "Ref. Usada", hist_car: "Vehículo", hist_time: "Fecha/Hora"
     }
   },
   en: { 
-    materials:"Materials", filters:"Filters", notas:"Notes", add:"Add", edit:"Edit", delete:"Delete", save:"Save", close:"Close",
+    materials:"Materials", filters:"Filters", notas:"Notes", add:"Add", edit:"Edit", delete:"Delete", save:"Save", close:"Close", use:"Use",
     titles: {
       app: "WORKSHOP MANAGEMENT", dashboard: "Dashboard", refs: "References", footer: "Storage: Firebase Realtime Database",
-      chart_mat: "Materials Chart", chart_fil: "Filters by Category Chart",
+      chart_mat: "Materials Chart", chart_fil: "Filters by Category Chart", hist:"Usage History",
       ref: "Reference", qty: "Quantity", actions: "Actions", brand: "Brand", model: "Model", category: "Category",
-      add_mat: "Add", add_fil: "Add Filter", add_note: "Save Note",
+      add_mat: "Add", add_fil: "Add Filter", add_note: "Save Note", use_fil:"Use Filter",
       placeholder_ref: "Reference", placeholder_qty: "Quantity", placeholder_brand: "Brand", placeholder_model: "Model", placeholder_note: "Add note",
       modal_edit: "Edit", page_mat: "Materials (Page)", page_fil: "Filters (Page)", page_not: "Notes",
       cat_aceite: "oil", cat_aire: "air", cat_habitaculos: "cabin", cat_combustible: "fuel",
-      alert_empty_ref: "Empty reference", alert_full_fields: "Reference and Brand required"
+      alert_empty_ref: "Empty reference", alert_full_fields: "Reference and Brand required", 
+      alert_no_stock: "No stock available for this reference.", 
+      alert_usage_fields: "Car Brand and Model are required.",
+      prompt_car_brand: "Car Brand", prompt_car_model: "Car Model", prompt_used_ref: "Used Reference",
+      hist_ref: "Used Ref.", hist_car: "Vehicle", hist_time: "Date/Time"
     }
   },
   it: { 
-    materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina", save:"Salva", close:"Chiudi",
+    materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina", save:"Salva", close:"Chiudi", use:"Usa",
     titles: {
       app: "GESTIONE OFFICINA", dashboard: "Dashboard", refs: "Riferimenti", footer: "Archiviazione: Firebase Realtime Database",
-      chart_mat: "Grafico Materiali", chart_fil: "Grafico Filtri per categoria",
+      chart_mat: "Grafico Materiali", chart_fil: "Grafico Filtri per categoria", hist:"Cronologia Utilizzo",
       ref: "Riferimento", qty: "Quantità", actions: "Azioni", brand: "Marca", model: "Modello", category: "Categoria",
-      add_mat: "Aggiungi", add_fil: "Aggiungi filtro", add_note: "Salva nota",
+      add_mat: "Aggiungi", add_fil: "Aggiungi filtro", add_note: "Salva nota", use_fil:"Usa Filtro",
       placeholder_ref: "Riferimento", placeholder_qty: "Quantità", placeholder_brand: "Marca", placeholder_model: "Modello", placeholder_note: "Aggiungi nota",
       modal_edit: "Modifica", page_mat: "Materiali (Pagina)", page_fil: "Filtri (Pagina)", page_not: "Note",
       cat_aceite: "olio", cat_aire: "aria", cat_habitaculos: "abitacolo", cat_combustible: "carburante",
-      alert_empty_ref: "Riferimento vuoto", alert_full_fields: "Riferimento e Marca richiesti"
+      alert_empty_ref: "Riferimento vuoto", alert_full_fields: "Riferimento e Marca richiesti",
+      alert_no_stock: "Nessuna scorta disponibile per questo riferimento.",
+      alert_usage_fields: "Marca e Modello dell'auto sono richiesti.",
+      prompt_car_brand: "Marca dell'Auto", prompt_car_model: "Modello dell'Auto", prompt_used_ref: "Riferimento Usato",
+      hist_ref: "Rif. Usato", hist_car: "Veicolo", hist_time: "Data/Ora"
     }
   }
 };
@@ -117,6 +140,7 @@ function applyLang(){
   $('#fil_title').textContent = lang.filters;
   $('#chart_fil_title').textContent = t.chart_fil;
   $('#not_page_title').textContent = lang.notas;
+  $('#hist_title').textContent = t.hist; // NUEVA TRADUCCIÓN
 
   // 3. Traducción de Encabezados de Tablas (Theads)
   $('#th_mat_ref').textContent = t.ref;
@@ -136,12 +160,18 @@ function applyLang(){
   $('#fil_brand_input').placeholder = t.placeholder_brand;
   $('#fil_model_input').placeholder = t.placeholder_model;
   $('#nota_text').placeholder = t.placeholder_note;
+  
+  // NUEVAS TRADUCCIONES DEL MODAL DE USO
+  $('#use_car_brand').placeholder = t.prompt_car_brand;
+  $('#use_car_model').placeholder = t.prompt_car_model;
+  $('#use_prompt_text').textContent = t.use_fil + ':';
 
   // 5. Traducción de Botones Principales (Añadir/Guardar)
   $('#mat_add').textContent = t.add_mat;
   $('#fil_add').textContent = t.add_fil;
   $('#nota_save').textContent = t.add_note;
-  
+  $('#modal_use_filter').textContent = lang.use; // NUEVO BOTÓN
+
   // 6. Traducción de Opciones de Filtro (Select Options)
   $('#opt_aceite').textContent = t.cat_aceite;
   $('#opt_aire').textContent = t.cat_aire;
@@ -158,7 +188,7 @@ function applyLang(){
   $('#modal_save').textContent = lang.save;
   $('#modal_close').textContent = lang.close;
   
-  // CRUCIAL: Volver a renderizar las tablas para que los botones de Edit/Delete tengan el texto traducido.
+  // CRUCIAL: Volver a renderizar las tablas para que los botones de Edit/Delete/Use tengan el texto traducido.
   renderAll(); 
 }
 
@@ -167,12 +197,14 @@ function renderAll(){
     renderMateriales(lastMatData);
     renderFiltros(lastFilData);
     renderNotas(lastNotData);
+    renderHistorial(lastHistData);
 }
 
 // ---- DATA CACHE (ultimos dumps) ----
 let lastMatData = {};
 let lastFilData = {};
 let lastNotData = {};
+let lastHistData = {}; // NUEVA CACHE
 
 // ---- RENDER: MATERIALES ----
 function renderMateriales(data){
@@ -181,7 +213,7 @@ function renderMateriales(data){
   if(!tbody) return;
   tbody.innerHTML = '';
   
-  const lang = LANGS[currentLang]; // Obtener las etiquetas traducidas
+  const lang = LANGS[currentLang]; 
 
   Object.entries(data || {}).forEach(([id, item]) => {
     const tr = el('tr');
@@ -189,14 +221,12 @@ function renderMateriales(data){
       <td>${escapeHtml(item.ref)}</td>
       <td>${Number(item.qty) || 0}</td>
       <td>
-        <button class="btn-edit" data-id="${id}">${lang.edit}</button>
-        <button class="btn-delete" data-id="${id}">${lang.delete}</button>
+        <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
+        <button class="btn-delete" data-id="${id}" data-type="material">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
   });
-  // full list page
-  const full = $('#materiales_full');
-  if(full) full.innerHTML = Object.entries(data || {}).map(([id,it])=>`${escapeHtml(it.ref)} — ${Number(it.qty)||0}`).join('<br>');
+  // ... (otros renders)
   updateChartMateriales(data);
 }
 
@@ -207,25 +237,65 @@ function renderFiltros(data){
   if(!tbody) return;
   tbody.innerHTML = '';
 
-  const lang = LANGS[currentLang]; // Obtener las etiquetas traducidas
+  const lang = LANGS[currentLang]; 
 
   Object.entries(data || {}).forEach(([id, item])=>{
     const tr = el('tr');
+    const translatedCategory = escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria);
+    
+    // AÑADIMOS EL BOTÓN "USE"
     tr.innerHTML = `
       <td>${escapeHtml(item.ref)}</td>
       <td>${escapeHtml(item.brand)}</td>
       <td>${escapeHtml(item.model)}</td>
-      <td>${escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria)}</td>
+      <td>${translatedCategory}</td>
       <td>${Number(item.qty)||0}</td>
       <td>
-        <button class="btn-edit" data-id="${id}">${lang.edit}</button>
-        <button class="btn-delete" data-id="${id}">${lang.delete}</button>
+        <button class="btn-use" data-id="${id}" data-ref="${escapeHtml(item.ref)}">${lang.use}</button>
+        <button class="btn-edit" data-id="${id}" data-type="filtro">${lang.edit}</button>
+        <button class="btn-delete" data-id="${id}" data-type="filtro">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
   });
-  const full = $('#filtros_full');
-  if(full) full.innerHTML = Object.entries(data || {}).map(([id,it])=>`${escapeHtml(it.ref)} — ${escapeHtml(it.brand)} — ${escapeHtml(it.model)} — ${escapeHtml(it.categoria)} — ${Number(it.qty)||0}`).join('<br>');
+  // ... (otros renders)
   updateChartFiltros(data);
+}
+
+// ---- RENDER: HISTORIAL DE USOS (NUEVO) ----
+function renderHistorial(data){
+    lastHistData = data || {};
+    const div = $('#hist_list'); if(!div) return;
+    div.innerHTML = '';
+    
+    // Creamos la tabla del historial
+    const table = el('table');
+    table.style.width = '100%';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>${LANGS[currentLang].titles.hist_ref}</th>
+                <th>${LANGS[currentLang].titles.hist_car}</th>
+                <th>${LANGS[currentLang].titles.hist_time}</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+
+    // Mapeamos los datos, ordenados por fecha descendente
+    const sortedData = Object.entries(data || {}).sort(([, a], [, b]) => b.ts - a.ts);
+
+    sortedData.forEach(([id, item]) => {
+        const tr = el('tr');
+        tr.innerHTML = `
+            <td>${escapeHtml(item.ref)}</td>
+            <td>${escapeHtml(item.carBrand)} ${escapeHtml(item.carModel)}</td>
+            <td>${formatDate(item.ts)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    div.appendChild(table);
 }
 
 // ---- RENDER: NOTAS ----
@@ -238,82 +308,145 @@ function renderNotas(data){
   });
 }
 
-// ---- EVENTS: Añadir / editar / borrar materiales ----
-window.addMaterial = function(){
-  const refVal = $('#mat_ref').value.trim();
-  const qty = parseInt($('#mat_qty').value) || 0;
-  if(!refVal) return alert(LANGS[currentLang].titles.alert_empty_ref); // Traducir alerta
-  push(matRef, { ref: refVal, qty });
-  $('#mat_ref').value = ''; $('#mat_qty').value = '';
+
+// ---- LÓGICA DE USO DE FILTRO (NUEVO) ----
+
+let currentFilterIdToUse = null; // Guarda el ID del filtro seleccionado
+
+// 1. Muestra el modal de uso
+window.useFilterModal = function(id, refText){
+    const modal = $('#modal');
+    const modalTitle = $('#modal_title');
+    const modalEditBody = $('#modal_body');
+    const modalUseForm = $('#modal_uso_form');
+    const modalUseButton = $('#modal_use_filter');
+    const modalSaveButton = $('#modal_save');
+    const refSelect = $('#use_ref_select');
+
+    currentFilterIdToUse = id;
+
+    // Ocultar elementos de Edición y mostrar los de Uso
+    modalEditBody.style.display = 'none';
+    modalSaveButton.style.display = 'none';
+
+    modalUseForm.style.display = 'block';
+    modalUseButton.style.display = 'inline-block';
+
+    modalTitle.textContent = LANGS[currentLang].titles.use_fil;
+    
+    // Limpiar y llenar el desplegable (Select)
+    refSelect.innerHTML = '';
+    const option = el('option');
+    // Muestra la referencia del filtro clickeado, no un listado de todas las refs
+    option.value = id;
+    option.textContent = refText;
+    refSelect.appendChild(option);
+    refSelect.disabled = true; // No permitimos cambiar la ref en este modal simple
+
+    // Limpiar campos de coche
+    $('#use_car_brand').value = '';
+    $('#use_car_model').value = '';
+
+    modal.style.display = 'flex';
 };
 
-window.addFiltro = function(){
-  const refVal = $('#fil_ref_input').value.trim();
-  const brand = $('#fil_brand_input').value.trim();
-  const model = $('#fil_model_input').value.trim();
-  const cat = $('#fil_cat').value;
-  const qty = parseInt($('#fil_qty').value) || 0;
-  if(!refVal || !brand) return alert(LANGS[currentLang].titles.alert_full_fields); // Traducir alerta
-  push(filRef, { ref: refVal, brand, model, categoria: cat, qty });
-  $('#fil_ref_input').value = ''; $('#fil_brand_input').value = ''; $('#fil_model_input').value = ''; $('#fil_qty').value = 0;
+// 2. Ejecuta el uso del filtro, resta stock y guarda historial
+window.useFilter = function(){
+    const t = LANGS[currentLang].titles;
+    const filterId = currentFilterIdToUse;
+    const item = lastFilData[filterId];
+    
+    if(!item) {
+        alert("Error: Filtro no encontrado.");
+        return;
+    }
+
+    // Verificar Stock
+    const currentQty = Number(item.qty) || 0;
+    if (currentQty <= 0) {
+        alert(t.alert_no_stock);
+        return;
+    }
+
+    // Capturar datos del coche
+    const carBrand = $('#use_car_brand').value.trim();
+    const carModel = $('#use_car_model').value.trim();
+
+    if (!carBrand || !carModel) {
+        alert(t.alert_usage_fields);
+        return;
+    }
+
+    // 1. ACTUALIZAR STOCK EN FILTROS (Restar 1)
+    update(ref(db, 'filtros/' + filterId), { qty: currentQty - 1 });
+
+    // 2. AÑADIR REGISTRO AL HISTORIAL
+    push(histRef, {
+        ref: item.ref,
+        carBrand: carBrand,
+        carModel: carModel,
+        categoria: item.categoria,
+        ts: Date.now() 
+    });
+
+    // 3. Cerrar Modal
+    $('#modal').style.display = 'none';
+    currentFilterIdToUse = null;
+    alert(`Filtro ${item.ref} usado y registrado.`);
 };
 
-window.addNota = function(){
-  const txt = $('#nota_text').value.trim();
-  if(!txt) return;
-  push(notRef, { text: txt, ts: Date.now() });
-  $('#nota_text').value = '';
-};
+// ---- ELIMINAR y EDICIÓN (Añadido 'data-type' para delegación) ----
 
-// ---- ELIMINAR ----
-window.deleteMaterial = function(id){
-  remove(ref(db, 'materiales/' + id));
-};
-window.deleteFiltro = function(id){
-  remove(ref(db, 'filtros/' + id));
-};
+window.deleteMaterial = function(id){ remove(ref(db, 'materiales/' + id)); };
+window.deleteFiltro = function(id){ remove(ref(db, 'filtros/' + id)); };
 
-// ---- EDICIÓN SIMPLE (prompts para no complicar modal) ----
 window.editMaterial = function(id){
-  const t = LANGS[currentLang].titles;
-  const item = lastMatData[id] || { ref: '', qty: 0 };
-  const newRef = prompt(t.ref + ':', item.ref); 
-  if(newRef === null) return;
-  const newQty = prompt(t.qty + ':', item.qty || 0); 
-  if(newQty === null) return;
-  update(ref(db,'materiales/'+id), { ref: newRef, qty: parseInt(newQty)||0 });
+    // (Lógica de edición simple con prompt, permanece igual)
+    const t = LANGS[currentLang].titles;
+    const item = lastMatData[id] || { ref: '', qty: 0 };
+    const newRef = prompt(t.ref + ':', item.ref); 
+    if(newRef === null) return;
+    const newQty = prompt(t.qty + ':', item.qty || 0); 
+    if(newQty === null) return;
+    update(ref(db,'materiales/'+id), { ref: newRef, qty: parseInt(newQty)||0 });
 };
 window.editFiltro = function(id){
-  const t = LANGS[currentLang].titles;
-  const item = lastFilData[id] || { ref:'', brand:'', model:'', categoria:'aceite', qty:0 };
-  const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
-  const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; 
-  const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; 
-  // Traducir prompt y lista de opciones
-  const catOptions = `${t.cat_aceite}/${t.cat_aire}/${t.cat_habitaculos}/${t.cat_combustible}`;
-  const newCat = prompt(`${t.category} (${catOptions}):`, item.categoria); if(newCat===null) return; 
-  const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; 
-  update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
+    // (Lógica de edición simple con prompt, permanece igual)
+    const t = LANGS[currentLang].titles;
+    const item = lastFilData[id] || { ref:'', brand:'', model:'', categoria:'aceite', qty:0 };
+    const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
+    const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; 
+    const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; 
+    const catOptions = `${t.cat_aceite}/${t.cat_aire}/${t.cat_habitaculos}/${t.cat_combustible}`;
+    const newCat = prompt(`${t.category} (${catOptions}):`, item.categoria); if(newCat===null) return; 
+    const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; 
+    update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
 };
 
-// ---- EVENT DELEGATION para botones Edit / Delete en tablas ----
+// ---- EVENT DELEGATION para botones Edit / Delete / USE en tablas ----
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if(!btn) return;
   
   const idVal = btn.dataset.id;
-  if (!idVal) return; 
+  const refText = btn.dataset.ref;
 
-  if(btn.classList.contains('btn-delete')){
-      if(lastMatData && lastMatData[idVal]) return deleteMaterial(idVal);
-      if(lastFilData && lastFilData[idVal]) return deleteFiltro(idVal);
+  if (btn.classList.contains('btn-use') && idVal) {
+      // Llamar al nuevo Modal de Uso
+      return window.useFilterModal(idVal, refText);
+  }
+
+  if(btn.classList.contains('btn-delete') && idVal){
+      if(btn.dataset.type === 'material') return deleteMaterial(idVal);
+      if(btn.dataset.type === 'filtro') return deleteFiltro(idVal);
   }
   
-  if(btn.classList.contains('btn-edit')){
-      if(lastMatData && lastMatData[idVal]) return editMaterial(idVal);
-      if(lastFilData && lastFilData[idVal]) return editFiltro(idVal);
+  if(btn.classList.contains('btn-edit') && idVal){
+      if(btn.dataset.type === 'material') return editMaterial(idVal);
+      if(btn.dataset.type === 'filtro') return editFiltro(idVal);
   }
 });
+
 
 // ---- REALTIME LISTENERS ----
 onValue(matRef, snapshot => {
@@ -333,7 +466,14 @@ onValue(notRef, snapshot => {
   renderNotas(data);
 });
 
-// ---- CHARTS ----
+// NUEVO LISTENER para el historial
+onValue(histRef, snapshot => {
+    const data = snapshot.val() || {};
+    renderHistorial(data);
+});
+
+
+// ---- CHARTS (Permanece igual) ----
 let chartMat = null, chartFil = null;
 function createCharts(){
   const ctxM = document.getElementById('chart_materiales')?.getContext('2d');
@@ -376,7 +516,7 @@ window.onload = function(){
   
   createCharts(); 
 
-  // Wire up UI buttons to exported functions (la conexión de los botones de añadir)
+  // Conexión de botones de añadir
   const matAdd = document.getElementById('mat_add');
   if(matAdd) matAdd.onclick = window.addMaterial;
   const filAdd = document.getElementById('fil_add');
@@ -384,6 +524,14 @@ window.onload = function(){
   const notaSave = document.getElementById('nota_save');
   if(notaSave) notaSave.onclick = window.addNota;
   
+  // Conexión del botón de "Usar Filtro" del modal
+  const modalUseFilterBtn = document.getElementById('modal_use_filter');
+  if(modalUseFilterBtn) modalUseFilterBtn.onclick = window.useFilter;
+  
+  // Conexión del botón "Cerrar" del modal para limpiar el estado
+  const modalCloseBtn = document.getElementById('modal_close');
+  if(modalCloseBtn) modalCloseBtn.onclick = () => $('#modal').style.display = 'none';
+
   // Esto llama a renderAll() internamente y traduce TODO
   applyLang(); 
 };
