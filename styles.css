@@ -9,12 +9,12 @@
     --bg: #fbf6f6;
     --card: #ffffff;
     --accent: #000000;
-    --accent-strong: #e74c3c;
+    --accent-strong: #e74c3c; /* Rojo/Naranja Principal */
     --muted: #6b6b6b;
     --success: #2ecc71;
     --danger: #e74c3c;
-    --primary-action: #59a14f; /* Botón 'Usar' */
-    --edit: #4a90e2; /* Botón 'Editar' */
+    --primary-action: #59a14f; /* Botón 'Usar' (Verde) */
+    --edit: #4a90e2; /* Botón 'Editar' (Azul) */
 
     /* Espaciado y Estilos */
     --radius: 8px;
@@ -35,7 +35,6 @@ body {
 h2 {
     margin-top: 0;
 }
-
 
 /* ------------------ 2. LAYOUT PRINCIPAL (Sidebar y Main) ------------------ */
 
@@ -92,7 +91,7 @@ h2 {
 }
 
 .sidebar nav button:hover {
-    background: #c0392b; /* Tono de hover más oscuro que accent-strong */
+    background: #c0392b;
 }
 
 .sidebar .footer {
@@ -102,7 +101,8 @@ h2 {
 }
 
 .main {
-    margin-left: 260px; /* Offset de 240px + 20px de padding */
+    /* Offset de 240px + 20px de padding */
+    margin-left: 260px;
     padding: 20px;
     min-height: 100vh;
 }
@@ -111,8 +111,7 @@ h2 {
     min-height: 100%;
 }
 
-
-/* ------------------ 3. COMPONENTES: SIDEBAR REFERENCES ------------------ */
+/* ------------------ 3. COMPONENTES: SIDEBAR REFERENCES (OPTIMIZADO) ------------------ */
 
 .sidebar-section {
     margin-top: 12px;
@@ -124,14 +123,40 @@ h2 {
     color: rgba(255, 255, 255, 0.95);
 }
 
+/* BOTÓN DE TOGGLE PARA ABRIR/CERRAR REFERENCIAS */
+.toggle-refs {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    width: 100%;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.toggle-refs:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 .refs-list {
-    display: flex;
+    /* Por defecto, la lista está OCULTA para ahorrar espacio vertical */
+    display: none; 
+    
     flex-direction: column;
     gap: 8px;
     max-height: 30vh;
-    overflow-y: auto; /* Mejor usar 'y' explícitamente */
+    overflow-y: auto;
     padding-right: 6px;
     min-width: 0;
+    margin-top: 8px; 
+}
+
+/* JS añade esta clase para MOSTRAR la lista */
+.refs-list.is-open {
+    display: flex;
 }
 
 .ref-item {
@@ -361,10 +386,9 @@ textarea {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 1000; /* Asegura que esté por encima de todo */
+    z-index: 1000;
 }
 
-/* Usar el selector de atributo para el JS 'display:flex' */
 .modal[open], .modal[style*="display:flex"] {
     display: flex;
 }
@@ -375,7 +399,7 @@ textarea {
     border-radius: 8px;
     max-width: 520px;
     width: 100%;
-    transform: translateY(-20px); /* Ligero efecto al aparecer */
+    transform: translateY(-20px);
     animation: modal-open 0.3s forwards;
 }
 
@@ -414,7 +438,16 @@ textarea {
         display: none;
     }
 
-    /* Ajustar logo y selector de idioma */
+    /* Ocultar el botón de toggle en móvil, ya que la lista de referencias está oculta permanentemente en este modo */
+    .toggle-refs {
+        display: none;
+    }
+
+    /* Asegurar que la lista de referencias esté oculta en móvil (solo se usa en desktop) */
+    .refs-list.is-open {
+        display: none; 
+    }
+
     .sidebar .logo, .sidebar .lang {
         flex-shrink: 0;
     }
@@ -424,8 +457,8 @@ textarea {
         flex-direction: row;
         flex-wrap: wrap;
         margin-top: 0;
-        flex: 1; /* Permitir que tome espacio */
-        justify-content: flex-end; /* Ocupar el espacio restante */
+        flex: 1;
+        justify-content: flex-end;
     }
 
     .main {
@@ -435,6 +468,6 @@ textarea {
 
     .row {
         flex-direction: column;
-        gap: 12px; /* Mejor usar la variable */
+        gap: var(--gap);
     }
 }
