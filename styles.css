@@ -1,10 +1,11 @@
-/* ------------------ Base / Reset ------------------ */
+/* ------------------ 1. BASE / RESET / VARIABLES ------------------ */
+
 * {
     box-sizing: border-box;
 }
 
 :root {
-    /* Variables */
+    /* Colores */
     --bg: #fbf6f6;
     --card: #ffffff;
     --accent: #000000;
@@ -12,7 +13,10 @@
     --muted: #6b6b6b;
     --success: #2ecc71;
     --danger: #e74c3c;
-    --primary-action: #59a14f; /* Nuevo color para 'Usar' */
+    --primary-action: #59a14f; /* Botón 'Usar' */
+    --edit: #4a90e2; /* Botón 'Editar' */
+
+    /* Espaciado y Estilos */
     --radius: 8px;
     --gap: 12px;
 }
@@ -28,7 +32,13 @@ body {
     color: #111;
 }
 
-/* ------------------ Layout ------------------ */
+h2 {
+    margin-top: 0;
+}
+
+
+/* ------------------ 2. LAYOUT PRINCIPAL (Sidebar y Main) ------------------ */
+
 .sidebar {
     width: 240px;
     min-width: 200px;
@@ -40,7 +50,7 @@ body {
     background: var(--accent);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--gap);
     color: #fff;
 }
 
@@ -53,9 +63,7 @@ body {
 }
 
 .sidebar h2 {
-    margin: 0;
     font-size: 18px;
-    color: #fff;
 }
 
 .lang select {
@@ -80,11 +88,11 @@ body {
     border-radius: 6px;
     text-align: left;
     cursor: pointer;
-    transition: filter 0.2s;
+    transition: background 0.2s;
 }
 
 .sidebar nav button:hover {
-    filter: brightness(.95);
+    background: #c0392b; /* Tono de hover más oscuro que accent-strong */
 }
 
 .sidebar .footer {
@@ -93,7 +101,19 @@ body {
     color: rgba(255, 232, 224, .9);
 }
 
-/* Sidebar references list */
+.main {
+    margin-left: 260px; /* Offset de 240px + 20px de padding */
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.page {
+    min-height: 100%;
+}
+
+
+/* ------------------ 3. COMPONENTES: SIDEBAR REFERENCES ------------------ */
+
 .sidebar-section {
     margin-top: 12px;
 }
@@ -109,9 +129,9 @@ body {
     flex-direction: column;
     gap: 8px;
     max-height: 30vh;
-    overflow: auto;
+    overflow-y: auto; /* Mejor usar 'y' explícitamente */
     padding-right: 6px;
-    min-width: 0; 
+    min-width: 0;
 }
 
 .ref-item {
@@ -128,7 +148,7 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
-    min-width: 0; 
+    min-width: 0;
     overflow: hidden;
 }
 
@@ -142,9 +162,9 @@ body {
 .ref-label {
     font-size: 13px;
     color: #fff;
-    white-space: nowrap; 
+    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis;
 }
 
 .ref-qty {
@@ -164,17 +184,9 @@ body {
 .ref-color-6 { background: #16a085; }
 .ref-color-7 { background: #34495e; }
 
-.main {
-    margin-left: 260px;
-    padding: 20px;
-    min-height: 100vh;
-}
 
-.page {
-    min-height: 100%;
-}
+/* ------------------ 4. COMPONENTES: GRID / CARDS ------------------ */
 
-/* ------------------ Grid / Cards ------------------ */
 .row {
     display: flex;
     gap: var(--gap);
@@ -194,9 +206,15 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
 }
 
-/* ------------------ Tables ------------------ */
+.chart-wrap {
+    height: 260px;
+}
+
+
+/* ------------------ 5. COMPONENTES: TABLES ------------------ */
+
 .table-wrap {
-    overflow: auto;
+    overflow-x: auto;
 }
 
 table {
@@ -207,11 +225,10 @@ table {
 }
 
 thead th {
-    /* Fondo para encabezados, usado también en la tabla de Historial de Usos */
-    background: #f8f8f8; 
+    background: #f8f8f8;
     padding: 10px;
     text-align: left;
-    border-bottom: 2px solid #ddd; /* Separador más fuerte */
+    border-bottom: 2px solid #ddd;
 }
 
 td, th {
@@ -224,13 +241,14 @@ tbody tr:hover {
     background: #faf7f7;
 }
 
-/* Nuevo estilo para la tabla de Historial de Usos */
+/* Historial de Usos */
 #hist_list table tbody tr td:last-child {
     font-size: 12px;
     color: var(--muted);
 }
-/* Fin Nuevo estilo */
 
+
+/* ------------------ 6. COMPONENTES: BUTTONS & ACTIONS ------------------ */
 
 .actions {
     display: flex;
@@ -238,8 +256,8 @@ tbody tr:hover {
     align-items: center;
 }
 
-/* ------------------ Botones de Acción de Tabla (Edit/Delete/Use) */
-.btn-edit, .btn-delete, .btn-use { /* Añadido .btn-use */
+/* Estilos base para todos los botones de acción de tabla */
+.btn-edit, .btn-delete, .btn-use {
     padding: 6px 8px;
     font-size: 13px;
     border-radius: 6px;
@@ -247,32 +265,43 @@ tbody tr:hover {
     cursor: pointer;
     color: #fff;
     transition: opacity 0.2s;
-    white-space: nowrap; /* Evita que el texto del botón se corte */
+    white-space: nowrap;
 }
 
-/* Estilo para el botón 'Usar' (Nuevo) */
-.btn-use {
-    background: var(--primary-action); /* Usar el nuevo color primario */
-}
+.btn-edit { background: var(--edit); }
+.btn-delete { background: var(--danger); }
+.btn-use { background: var(--primary-action); }
 
-.btn-use:hover {
+.btn-edit:hover, .btn-delete:hover, .btn-use:hover {
     opacity: 0.8;
 }
 
-.btn-edit {
-    background: #4a90e2; 
+/* Botones generales */
+button.small {
+    padding: 6px 8px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: none;
+    background: #6c6c6c;
+    color: #fff;
+    cursor: pointer;
 }
 
-.btn-delete {
-    background: var(--danger);
+button.small:hover {
+    opacity: .9;
 }
 
-.btn-edit:hover, .btn-delete:hover {
-    opacity: 0.9;
+.btn-primary {
+    background: var(--accent-strong);
+    color: #fff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    border: none;
 }
 
 
-/* ------------------ Form / Add ------------------ */
+/* ------------------ 7. COMPONENTES: FORMULARIOS (Add & Notas) ------------------ */
+
 .add {
     display: flex;
     gap: 8px;
@@ -305,60 +334,6 @@ tbody tr:hover {
     background: var(--accent);
 }
 
-/* ------------------ Buttons */
-button.small {
-    padding: 6px 8px;
-    font-size: 13px;
-    border-radius: 6px;
-    border: none;
-    background: #6c6c6c;
-    color: #fff;
-    cursor: pointer;
-}
-
-button.small:hover {
-    opacity: .9;
-}
-
-.btn-primary {
-    background: var(--accent-strong);
-    color: #fff;
-    border-radius: 6px;
-    padding: 8px 12px;
-    border: none;
-}
-
-/* ------------------ Modal ------------------ */
-.modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .35);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.modal[open], .modal[style*="display:flex"] {
-    display: flex;
-}
-
-.modal-content {
-    background: var(--card);
-    padding: 18px;
-    border-radius: 8px;
-    max-width: 520px;
-    width: 100%;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    margin-top: 12px;
-}
-
-/* ------------------ Inputs / Notas */
 textarea {
     width: 100%;
     min-height: 120px;
@@ -372,15 +347,58 @@ textarea {
     padding: 10px;
     border-radius: 8px;
     margin-top: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* ------------------ Charts */
-.chart-wrap {
-    height: 260px;
+
+/* ------------------ 8. MODAL ------------------ */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000; /* Asegura que esté por encima de todo */
 }
 
-/* ------------------ Responsive ------------------ */
+/* Usar el selector de atributo para el JS 'display:flex' */
+.modal[open], .modal[style*="display:flex"] {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card);
+    padding: 18px;
+    border-radius: 8px;
+    max-width: 520px;
+    width: 100%;
+    transform: translateY(-20px); /* Ligero efecto al aparecer */
+    animation: modal-open 0.3s forwards;
+}
+
+@keyframes modal-open {
+    to { transform: translateY(0); }
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+/* Estilos específicos para el formulario de uso dentro del modal */
+#modal_uso_form .add {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+
+/* ------------------ 9. RESPONSIVE ------------------ */
+
 @media (max-width: 900px) {
     .sidebar {
         position: relative;
@@ -388,21 +406,26 @@ textarea {
         height: auto;
         flex-direction: row;
         align-items: center;
-        flex-wrap: wrap; 
+        flex-wrap: wrap;
     }
 
+    /* Ocultar elementos secundarios del sidebar en móvil */
     .sidebar .sidebar-section, .sidebar .footer {
         display: none;
     }
-    
+
+    /* Ajustar logo y selector de idioma */
     .sidebar .logo, .sidebar .lang {
         flex-shrink: 0;
     }
 
+    /* Navegación horizontal */
     .sidebar nav {
         flex-direction: row;
         flex-wrap: wrap;
         margin-top: 0;
+        flex: 1; /* Permitir que tome espacio */
+        justify-content: flex-end; /* Ocupar el espacio restante */
     }
 
     .main {
@@ -412,5 +435,6 @@ textarea {
 
     .row {
         flex-direction: column;
+        gap: 12px; /* Mejor usar la variable */
     }
 }
