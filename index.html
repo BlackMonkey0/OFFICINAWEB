@@ -93,7 +93,13 @@
           <div class="chart-wrap"><canvas id="chart_filtros"></canvas></div>
         </div>
       </div>
-
+      
+      <div class="row">
+        <div class="col card">
+          <h3 id="hist_title">Historial de Usos</h3>
+          <div id="hist_list"></div>
+        </div>
+      </div>
       <div class="row">
         <div class="col card">
           <h3 id="not_page_title">Notas</h3>
@@ -123,8 +129,18 @@
   <div id="modal" class="modal" style="display:none">
     <div class="modal-content" role="dialog" aria-modal="true">
       <h3 id="modal_title">Editar</h3>
-      <div id="modal_body"></div>
+      <div id="modal_body">
+        </div>
+      
+      <div id="modal_uso_form" style="display: none;">
+        <p id="use_prompt_text">Usar Filtro:</p>
+        <select id="use_ref_select" style="width: 100%; margin-bottom: 10px; padding: 8px;"></select>
+        <input type="text" id="use_car_brand" placeholder="Marca del Coche" style="width: 100%; margin-bottom: 10px; padding: 8px;" />
+        <input type="text" id="use_car_model" placeholder="Modelo del Coche" style="width: 100%; margin-bottom: 10px; padding: 8px;" />
+      </div>
+      
       <div class="modal-actions">
+        <button id="modal_use_filter" class="btn-save" style="display:none;">Usar Filtro</button>
         <button id="modal_save" class="btn-save">Guardar</button>
         <button id="modal_close" class="btn-cancel">Cerrar</button>
       </div>
