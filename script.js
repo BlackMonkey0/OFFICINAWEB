@@ -238,12 +238,13 @@ function renderFiltros(data){
   tbody.innerHTML = '';
 
   const lang = LANGS[currentLang]; 
+  const t = lang.titles; // Títulos traducidos
 
+  // 1. Renderizar la tabla del DASHBOARD
   Object.entries(data || {}).forEach(([id, item])=>{
     const tr = el('tr');
     const translatedCategory = escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria);
     
-    // AÑADIMOS EL BOTÓN "USE"
     tr.innerHTML = `
       <td>${escapeHtml(item.ref)}</td>
       <td>${escapeHtml(item.brand)}</td>
@@ -257,7 +258,48 @@ function renderFiltros(data){
       </td>`;
     tbody.appendChild(tr);
   });
-  // ... (otros renders)
+  
+  // 2. Renderizar la tabla de la página COMPLETA (filtros_full)
+  const full = $('#filtros_full');
+  if(full) {
+    let html = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>${t.ref}</th>
+              <th>${t.brand}</th>
+              <th>${t.model}</th>
+              <th>${t.category}</th>
+              <th>${t.qty}</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    Object.values(data || {}).forEach(item => {
+      const translatedCategory = escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria);
+      
+      html += `
+        <tr>
+          <td>${escapeHtml(item.ref)}</td>
+          <td>${escapeHtml(item.brand)}</td>
+          <td>${escapeHtml(item.model)}</td>
+          <td>${translatedCategory}</td>
+          <td>${Number(item.qty)||0}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    full.innerHTML = html;
+  }
+  
   updateChartFiltros(data);
 }
 
