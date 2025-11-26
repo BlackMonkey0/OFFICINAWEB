@@ -5,25 +5,20 @@
 }
 
 :root {
-    /* Colores */
+    /* Colores y Variables */
     --bg: #fbf6f6;
     --card: #ffffff;
     --accent: #000000;
-    --accent-strong: #e74c3c; /* Rojo/Naranja Principal */
+    --accent-strong: #e74c3c;
     --muted: #6b6b6b;
-    --success: #2ecc71;
     --danger: #e74c3c;
     --primary-action: #59a14f; /* Botón 'Usar' (Verde) */
     --edit: #4a90e2; /* Botón 'Editar' (Azul) */
-
-    /* Espaciado y Estilos */
     --radius: 8px;
     --gap: 12px;
 }
 
-html, body {
-    height: 100%;
-}
+html, body { height: 100%; }
 
 body {
     margin: 0;
@@ -32,9 +27,7 @@ body {
     color: #111;
 }
 
-h2 {
-    margin-top: 0;
-}
+h2 { margin-top: 0; }
 
 /* ------------------ 2. LAYOUT PRINCIPAL (Sidebar y Main) ------------------ */
 
@@ -61,9 +54,7 @@ h2 {
     object-fit: contain;
 }
 
-.sidebar h2 {
-    font-size: 18px;
-}
+.sidebar h2 { font-size: 18px; }
 
 .lang select {
     width: 100%;
@@ -90,9 +81,7 @@ h2 {
     transition: background 0.2s;
 }
 
-.sidebar nav button:hover {
-    background: #c0392b;
-}
+.sidebar nav button:hover { background: #c0392b; }
 
 .sidebar .footer {
     margin-top: auto;
@@ -101,21 +90,39 @@ h2 {
 }
 
 .main {
-    /* Offset de 240px + 20px de padding */
     margin-left: 260px;
     padding: 20px;
     min-height: 100vh;
 }
 
-.page {
-    min-height: 100%;
+.page { min-height: 100%; }
+
+/* ------------------ 3. COMPONENTES: GRID, CARDS y CHARTS ------------------ */
+
+.row {
+    display: flex;
+    gap: var(--gap);
+    margin-bottom: var(--gap);
+    flex-wrap: wrap;
 }
 
-/* ------------------ 3. COMPONENTES: SIDEBAR REFERENCES (OPTIMIZADO) ------------------ */
-
-.sidebar-section {
-    margin-top: 12px;
+.col {
+    flex: 1;
+    min-width: 260px;
 }
+
+.card {
+    background: var(--card);
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+}
+
+.chart-wrap { height: 260px; }
+
+/* ------------------ 4. COMPONENTES: SIDEBAR REFERENCES (Compacto) ------------------ */
+
+.sidebar-section { margin-top: 12px; }
 
 .sidebar-section h4 {
     margin: 8px 0 6px 0;
@@ -123,7 +130,7 @@ h2 {
     color: rgba(255, 255, 255, 0.95);
 }
 
-/* BOTÓN DE TOGGLE PARA ABRIR/CERRAR REFERENCIAS */
+/* Toggle Button */
 .toggle-refs {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -137,14 +144,11 @@ h2 {
     transition: background 0.2s;
 }
 
-.toggle-refs:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
+.toggle-refs:hover { background: rgba(255, 255, 255, 0.1); }
 
+/* Lista de Referencias - Oculta por defecto */
 .refs-list {
-    /* Por defecto, la lista está OCULTA para ahorrar espacio vertical */
     display: none; 
-    
     flex-direction: column;
     gap: 8px;
     max-height: 30vh;
@@ -154,10 +158,7 @@ h2 {
     margin-top: 8px; 
 }
 
-/* JS añade esta clase para MOSTRAR la lista */
-.refs-list.is-open {
-    display: flex;
-}
+.refs-list.is-open { display: flex; }
 
 .ref-item {
     display: flex;
@@ -199,7 +200,7 @@ h2 {
     flex-shrink: 0;
 }
 
-/* Color palette for reference badges (cycled) */
+/* Color palette for reference badges */
 .ref-color-0 { background: #f39c12; }
 .ref-color-1 { background: #e67e22; }
 .ref-color-2 { background: #e74c3c; }
@@ -210,37 +211,9 @@ h2 {
 .ref-color-7 { background: #34495e; }
 
 
-/* ------------------ 4. COMPONENTES: GRID / CARDS ------------------ */
-
-.row {
-    display: flex;
-    gap: var(--gap);
-    margin-bottom: var(--gap);
-    flex-wrap: wrap;
-}
-
-.col {
-    flex: 1;
-    min-width: 260px;
-}
-
-.card {
-    background: var(--card);
-    padding: 16px;
-    border-radius: var(--radius);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
-}
-
-.chart-wrap {
-    height: 260px;
-}
-
-
 /* ------------------ 5. COMPONENTES: TABLES ------------------ */
 
-.table-wrap {
-    overflow-x: auto;
-}
+.table-wrap { overflow-x: auto; }
 
 table {
     width: 100%;
@@ -262,9 +235,7 @@ td, th {
     vertical-align: middle;
 }
 
-tbody tr:hover {
-    background: #faf7f7;
-}
+tbody tr:hover { background: #faf7f7; }
 
 /* Historial de Usos */
 #hist_list table tbody tr td:last-child {
@@ -281,7 +252,7 @@ tbody tr:hover {
     align-items: center;
 }
 
-/* Estilos base para todos los botones de acción de tabla */
+/* Botones de Acción de Tabla (Edit/Delete/Use) */
 .btn-edit, .btn-delete, .btn-use {
     padding: 6px 8px;
     font-size: 13px;
@@ -297,9 +268,7 @@ tbody tr:hover {
 .btn-delete { background: var(--danger); }
 .btn-use { background: var(--primary-action); }
 
-.btn-edit:hover, .btn-delete:hover, .btn-use:hover {
-    opacity: 0.8;
-}
+.btn-edit:hover, .btn-delete:hover, .btn-use:hover { opacity: 0.8; }
 
 /* Botones generales */
 button.small {
@@ -312,9 +281,7 @@ button.small {
     cursor: pointer;
 }
 
-button.small:hover {
-    opacity: .9;
-}
+button.small:hover { opacity: .9; }
 
 .btn-primary {
     background: var(--accent-strong);
@@ -341,9 +308,7 @@ button.small:hover {
     background: #fff;
 }
 
-.add input[type=number] {
-    width: 120px;
-}
+.add input[type=number] { width: 120px; }
 
 .add button {
     padding: 9px 14px;
@@ -355,9 +320,7 @@ button.small:hover {
     transition: background 0.2s;
 }
 
-.add button:hover {
-    background: var(--accent);
-}
+.add button:hover { background: var(--accent); }
 
 textarea {
     width: 100%;
@@ -389,9 +352,7 @@ textarea {
     z-index: 1000;
 }
 
-.modal[open], .modal[style*="display:flex"] {
-    display: flex;
-}
+.modal[open], .modal[style*="display:flex"] { display: flex; }
 
 .modal-content {
     background: var(--card);
@@ -403,9 +364,7 @@ textarea {
     animation: modal-open 0.3s forwards;
 }
 
-@keyframes modal-open {
-    to { transform: translateY(0); }
-}
+@keyframes modal-open { to { transform: translateY(0); } }
 
 .modal-actions {
     display: flex;
@@ -414,14 +373,13 @@ textarea {
     margin-top: 12px;
 }
 
-/* Estilos específicos para el formulario de uso dentro del modal */
 #modal_uso_form .add {
     flex-direction: column;
     align-items: flex-start;
 }
 
 
-/* ------------------ 9. RESPONSIVE ------------------ */
+/* ------------------ 9. RESPONSIVE (Menos de 900px) ------------------ */
 
 @media (max-width: 900px) {
     .sidebar {
@@ -433,26 +391,11 @@ textarea {
         flex-wrap: wrap;
     }
 
-    /* Ocultar elementos secundarios del sidebar en móvil */
-    .sidebar .sidebar-section, .sidebar .footer {
-        display: none;
-    }
+    .sidebar .sidebar-section, .sidebar .footer { display: none; }
+    
+    /* Ocultar elementos de referencia y toggle en móvil */
+    .toggle-refs, .refs-list.is-open { display: none; }
 
-    /* Ocultar el botón de toggle en móvil, ya que la lista de referencias está oculta permanentemente en este modo */
-    .toggle-refs {
-        display: none;
-    }
-
-    /* Asegurar que la lista de referencias esté oculta en móvil (solo se usa en desktop) */
-    .refs-list.is-open {
-        display: none; 
-    }
-
-    .sidebar .logo, .sidebar .lang {
-        flex-shrink: 0;
-    }
-
-    /* Navegación horizontal */
     .sidebar nav {
         flex-direction: row;
         flex-wrap: wrap;
