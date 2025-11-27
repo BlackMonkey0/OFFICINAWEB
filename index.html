@@ -22,8 +22,8 @@
     </nav>
     <div class="sidebar-section">
       <h4 id="side_ref_title">Referencias</h4>
-      <button id="toggle_refs_btn" class="toggle-refs" onclick="toggleRefs()">Mostrar Referencias</button> 
-            <div id="refs_list" class="refs-list"></div> 
+      <button id="toggle_refs_btn" class="toggle-refs" onclick="toggleRefs()">Mostrar Referencias</button> 
+      <div id="refs_list" class="refs-list"></div> 
     </div>
     <div class="footer">
       <small id="footer_text">Almacenamiento: Firebase Realtime Database</small>
@@ -35,18 +35,18 @@
       <div class="row">
         <div class="col card">
           <h3 id="mat_title">Materiales</h3>
-          <div class="table-wrap">
-            <table id="mat_table">
-              <thead>
-                <tr>
-                  <th id="th_mat_ref">Referencia</th>
-                  <th id="th_mat_qty">Cantidad</th>
-                  <th id="th_mat_actions">Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+                    <div class="table-wrap listado-compacto">
+            <table id="mat_table">
+              <thead>
+                <tr>
+                  <th id="th_mat_ref">Referencia</th>
+                  <th id="th_mat_qty">Cantidad</th>
+                  <th id="th_mat_actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
           <div class="add">
             <input id="mat_ref" placeholder="Referencia"/>
             <input id="mat_qty" type="number" placeholder="Cantidad" />
@@ -63,21 +63,21 @@
       <div class="row">
         <div class="col card">
           <h3 id="fil_title">Filtros</h3>
-          <div class="table-wrap listado-compacto">
-            <table id="fil_table">
-              <thead>
-                <tr>
-                  <th id="th_fil_ref">Ref</th>
-                  <th id="th_fil_brand">Marca</th>
-                  <th id="th_fil_model">Modelo</th>
-                  <th id="th_fil_cat">Categoría</th>
-                  <th id="th_fil_qty">Cantidad</th>
-                  <th id="th_fil_actions">Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+          <div class="table-wrap listado-compacto">
+            <table id="fil_table">
+              <thead>
+                <tr>
+                  <th id="th_fil_ref">Ref</th>
+                  <th id="th_fil_brand">Marca</th>
+                  <th id="th_fil_model">Modelo</th>
+                  <th id="th_fil_cat">Categoría</th>
+                  <th id="th_fil_qty">Cantidad</th>
+                  <th id="th_fil_actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
           <div class="add">
             <input id="fil_ref_input" placeholder="Referencia"/>
             <input id="fil_brand_input" placeholder="Marca"/>
