@@ -53,12 +53,31 @@ window.navigate = function(page){
   }
 };
 
+// ---- SIDEBAR (Toggle Referencias) ----
+window.toggleRefs = function(){
+    const refsList = $('#refs_list');
+    const toggleBtn = $('#toggle_refs_btn');
+    const lang = LANGS[currentLang];
+
+    // Alternar la clase 'is-open'
+    const isOpen = refsList.classList.toggle('is-open');
+
+    // Actualizar el texto del botón
+    if (toggleBtn) {
+        // Asume que la traducción de 'Referencias' y 'Ocultar' está en los LANGS
+        const refsText = lang.titles.refs || 'References';
+        const hideText = lang.titles.hide_refs || ' (Ocultar)';
+        toggleBtn.textContent = isOpen ? `${refsText}${hideText}` : refsText;
+    }
+}
+
+
 // ---- LANGS (incluyendo USE y Historial) ----
 const LANGS = {
   es: { 
     materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar", save:"Guardar", close:"Cerrar", use:"Usar",
     titles: {
-      app: "GESTIÓN TALLER", dashboard: "Dashboard", refs: "Referencias", footer: "Almacenamiento: Firebase Realtime Database",
+      app: "GESTIÓN TALLER", dashboard: "Dashboard", refs: "Referencias", hide_refs: " (Ocultar)", footer: "Almacenamiento: Firebase Realtime Database",
       chart_mat: "Gráfico Materiales", chart_fil: "Gráfico Filtros por categoría", hist:"Historial de Usos",
       ref: "Referencia", qty: "Cantidad", actions: "Acciones", brand: "Marca", model: "Modelo", category: "Categoría",
       add_mat: "Añadir", add_fil: "Añadir filtro", add_note: "Guardar nota", use_fil:"Usar Filtro",
@@ -75,7 +94,7 @@ const LANGS = {
   en: { 
     materials:"Materials", filters:"Filters", notas:"Notes", add:"Add", edit:"Edit", delete:"Delete", save:"Save", close:"Close", use:"Use",
     titles: {
-      app: "WORKSHOP MANAGEMENT", dashboard: "Dashboard", refs: "References", footer: "Storage: Firebase Realtime Database",
+      app: "WORKSHOP MANAGEMENT", dashboard: "Dashboard", refs: "References", hide_refs: " (Hide)", footer: "Storage: Firebase Realtime Database",
       chart_mat: "Materials Chart", chart_fil: "Filters by Category Chart", hist:"Usage History",
       ref: "Reference", qty: "Quantity", actions: "Actions", brand: "Brand", model: "Model", category: "Category",
       add_mat: "Add", add_fil: "Add Filter", add_note: "Save Note", use_fil:"Use Filter",
@@ -92,7 +111,7 @@ const LANGS = {
   it: { 
     materials:"Materiali", filters:"Filtri", notas:"Note", add:"Aggiungi", edit:"Modifica", delete:"Elimina", save:"Salva", close:"Chiudi", use:"Usa",
     titles: {
-      app: "GESTIONE OFFICINA", dashboard: "Dashboard", refs: "Riferimenti", footer: "Archiviazione: Firebase Realtime Database",
+      app: "GESTIONE OFFICINA", dashboard: "Dashboard", refs: "Riferimenti", hide_refs: " (Nascondi)", footer: "Archiviazione: Firebase Realtime Database",
       chart_mat: "Grafico Materiali", chart_fil: "Grafico Filtri per categoria", hist:"Cronologia Utilizzo",
       ref: "Riferimento", qty: "Quantità", actions: "Azioni", brand: "Marca", model: "Modello", category: "Categoria",
       add_mat: "Aggiungi", add_fil: "Aggiungi filtro", add_note: "Salva nota", use_fil:"Usa Filtro",
@@ -132,6 +151,7 @@ function applyLang(){
   $('#nav_filtros').textContent = lang.filters;
   $('#nav_notas').textContent = lang.notas;
   $('#side_ref_title').textContent = t.refs;
+  $('#toggle_refs_btn').textContent = t.refs; 
   $('#footer_text').textContent = t.footer;
   
   // 2. Traducción de Contenedores de Página (Dashboard)
@@ -139,8 +159,9 @@ function applyLang(){
   $('#chart_mat_title').textContent = t.chart_mat;
   $('#fil_title').textContent = lang.filters;
   $('#chart_fil_title').textContent = t.chart_fil;
-  $('#not_page_title').textContent = lang.notas;
-  $('#hist_title').textContent = t.hist; // NUEVA TRADUCCIÓN
+  // El ID 'not_page_title' ya no existe en el HTML más reciente, usar 'page_not_title'
+  $('#page_not_title').textContent = lang.notas; 
+  $('#hist_title').textContent = t.hist;
 
   // 3. Traducción de Encabezados de Tablas (Theads)
   $('#th_mat_ref').textContent = t.ref;
@@ -170,7 +191,7 @@ function applyLang(){
   $('#mat_add').textContent = t.add_mat;
   $('#fil_add').textContent = t.add_fil;
   $('#nota_save').textContent = t.add_note;
-  $('#modal_use_filter').textContent = lang.use; // NUEVO BOTÓN
+  $('#modal_use_filter').textContent = lang.use;
 
   // 6. Traducción de Opciones de Filtro (Select Options)
   $('#opt_aceite').textContent = t.cat_aceite;
@@ -209,20 +230,21 @@ let lastHistData = {}; // NUEVA CACHE
 // ---- RENDER: MATERIALES ----
 function renderMateriales(data){
   lastMatData = data || {};
-  const tbody = $('#mat_table tbody');
+  // CORRECCIÓN CLAVE: El ID del tbody en el HTML es 'mat_table_body', no '#mat_table tbody'
+  const tbody = $('#mat_table_body'); 
   if(!tbody) return;
   tbody.innerHTML = '';
   
-  const lang = LANGS[currentLang]; // Obtener las etiquetas traducidas para Modifica/Elimina
-  const t = lang.titles; // Títulos traducidos
+  const lang = LANGS[currentLang]; 
+  const t = lang.titles; 
 
-  // 1. Renderizar la tabla del DASHBOARD (Mini)
+  // 1. Renderizar la tabla del DASHBOARD (Mini)
   Object.entries(data || {}).forEach(([id, item]) => {
     const tr = el('tr');
     tr.innerHTML = `
       <td>${escapeHtml(item.ref)}</td>
       <td>${Number(item.qty) || 0}</td>
-      <td>
+      <td class="actions">
         <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="material">${lang.delete}</button>
       </td>`;
@@ -232,34 +254,34 @@ function renderMateriales(data){
   // 2. Renderizar la tabla de la página COMPLETA (materiales_full)
   const full = $('#materiales_full');
   if(full) {
-    let html = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>${t.ref}</th>
-              <th>${t.qty}</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
+    let html = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>${t.ref}</th>
+              <th>${t.qty}</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
 
-    Object.values(data || {}).forEach(item => {
-      html += `
-        <tr>
-          <td>${escapeHtml(item.ref)}</td>
-          <td>${Number(item.qty)||0}</td>
-        </tr>
-      `;
-    });
+    Object.values(data || {}).forEach(item => {
+      html += `
+        <tr>
+          <td>${escapeHtml(item.ref)}</td>
+          <td>${Number(item.qty)||0}</td>
+        </tr>
+      `;
+    });
 
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    full.innerHTML = html;
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    full.innerHTML = html;
   }
   
   updateChartMateriales(data);
@@ -268,12 +290,14 @@ function renderMateriales(data){
 // ---- RENDER: FILTROS ----
 function renderFiltros(data){
   lastFilData = data || {};
-  const tbody = $('#fil_table tbody');
+  // CORRECCIÓN CLAVE: El ID del tbody de Filtros es '#fil_table tbody' en el código, pero el HTML es '#fil_table tbody'. 
+  // Usaremos el selector compuesto para asegurar compatibilidad. (El selector original estaba correcto en este caso, pero se mantiene la precaución)
+  const tbody = $('#fil_table tbody'); 
   if(!tbody) return;
   tbody.innerHTML = '';
 
   const lang = LANGS[currentLang]; 
-  const t = lang.titles; // Títulos traducidos
+  const t = lang.titles;
 
   // 1. Renderizar la tabla del DASHBOARD
   Object.entries(data || {}).forEach(([id, item])=>{
@@ -286,7 +310,7 @@ function renderFiltros(data){
       <td>${escapeHtml(item.model)}</td>
       <td>${translatedCategory}</td>
       <td>${Number(item.qty)||0}</td>
-      <td>
+      <td class="actions">
         <button class="btn-use" data-id="${id}" data-ref="${escapeHtml(item.ref)}">${lang.use}</button>
         <button class="btn-edit" data-id="${id}" data-type="filtro">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="filtro">${lang.delete}</button>
@@ -384,6 +408,48 @@ function renderNotas(data){
     const d = el('div'); d.className = 'nota'; d.textContent = n.text; div.appendChild(d);
   });
 }
+
+// ---- LOGICA FIREBASE (Funciones ADD - Recopiladas del contexto anterior) ----
+window.addMaterial = function(){
+    const t = LANGS[currentLang].titles;
+    const ref = $('#mat_ref').value.trim();
+    const qty = parseInt($('#mat_qty').value.trim());
+
+    if (!ref || isNaN(qty) || qty < 0) {
+        alert(t.alert_empty_ref);
+        return;
+    }
+    push(matRef, { ref: ref, qty: qty });
+    $('#mat_ref').value = '';
+    $('#mat_qty').value = '';
+};
+
+window.addFiltro = function(){
+    const t = LANGS[currentLang].titles;
+    const ref = $('#fil_ref_input').value.trim();
+    const brand = $('#fil_brand_input').value.trim();
+    const model = $('#fil_model_input').value.trim();
+    const categoria = $('#fil_cat_select').value;
+    const qty = parseInt($('#fil_qty_input').value.trim());
+
+    if (!ref || !brand || isNaN(qty) || qty < 0) {
+        alert(t.alert_full_fields);
+        return;
+    }
+    push(filRef, { ref: ref, brand: brand, model: model, categoria: categoria, qty: qty });
+    $('#fil_ref_input').value = '';
+    $('#fil_brand_input').value = '';
+    $('#fil_model_input').value = '';
+    $('#fil_qty_input').value = '';
+};
+
+window.addNota = function(){
+    const t = LANGS[currentLang].titles;
+    const text = $('#nota_text').value.trim();
+    if (!text) return;
+    push(notRef, { text: text, ts: Date.now() });
+    $('#nota_text').value = '';
+};
 
 
 // ---- LÓGICA DE USO DE FILTRO (NUEVO) ----
