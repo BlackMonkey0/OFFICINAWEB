@@ -35,7 +35,7 @@
       <div class="row">
         <div class="col card">
           <h3 id="mat_title">Materiales</h3>
-                    <div class="table-wrap listado-compacto">
+          <div class="table-wrap listado-compacto">
             <table id="mat_table">
               <thead>
                 <tr>
@@ -44,7 +44,7 @@
                   <th id="th_mat_actions">Acciones</th>
                 </tr>
               </thead>
-              <tbody></tbody>
+                            <tbody id="mat_table_body"></tbody>
             </table>
           </div>
           <div class="add">
@@ -82,8 +82,8 @@
             <input id="fil_ref_input" placeholder="Referencia"/>
             <input id="fil_brand_input" placeholder="Marca"/>
             <input id="fil_model_input" placeholder="Modelo"/>
-            <input id="fil_qty" type="number" placeholder="Cantidad" value="0" />
-            <select id="fil_cat">
+                        <input id="fil_qty_input" type="number" placeholder="Cantidad" value="0" />
+                        <select id="fil_cat_select">
               <option value="aceite" id="opt_aceite">aceite</option>
               <option value="aire" id="opt_aire">aire</option>
               <option value="habitaculos" id="opt_habitaculos">habitaculos</option>
@@ -127,7 +127,7 @@
 
     <section id="notas" class="page" style="display:none">
       <h1 id="page_not_title">Notas</h1>
-      <div id="notas_page_list"></div>
+            <div id="notas_list"></div> 
     </section>
   </main>
 
