@@ -24,7 +24,6 @@ const db = getDatabase(app);
 const matRef = ref(db, "materiales");
 const filRef = ref(db, "filtros");
 const notRef = ref(db, "notas");
-// NUEVA REFERENCIA
 const histRef = ref(db, "historial_usos"); 
 
 // ---- UTILIDADES DOM / escape ----
@@ -159,7 +158,6 @@ function applyLang(){
   $('#chart_mat_title').textContent = t.chart_mat;
   $('#fil_title').textContent = lang.filters;
   $('#chart_fil_title').textContent = t.chart_fil;
-  // El ID 'not_page_title' ya no existe en el HTML más reciente, usar 'page_not_title'
   $('#page_not_title').textContent = lang.notas; 
   $('#hist_title').textContent = t.hist;
 
@@ -230,7 +228,7 @@ let lastHistData = {}; // NUEVA CACHE
 // ---- RENDER: MATERIALES ----
 function renderMateriales(data){
   lastMatData = data || {};
-  // CORRECCIÓN CLAVE: El ID del tbody en el HTML es 'mat_table_body', no '#mat_table tbody'
+  // CORRECCIÓN CLAVE: Usar el ID correcto del TBody para asegurar el renderizado en el Dashboard
   const tbody = $('#mat_table_body'); 
   if(!tbody) return;
   tbody.innerHTML = '';
@@ -290,8 +288,6 @@ function renderMateriales(data){
 // ---- RENDER: FILTROS ----
 function renderFiltros(data){
   lastFilData = data || {};
-  // CORRECCIÓN CLAVE: El ID del tbody de Filtros es '#fil_table tbody' en el código, pero el HTML es '#fil_table tbody'. 
-  // Usaremos el selector compuesto para asegurar compatibilidad. (El selector original estaba correcto en este caso, pero se mantiene la precaución)
   const tbody = $('#fil_table tbody'); 
   if(!tbody) return;
   tbody.innerHTML = '';
@@ -409,34 +405,34 @@ function renderNotas(data){
   });
 }
 
-// ---- LOGICA FIREBASE (Funciones ADD - Recopiladas del contexto anterior) ----
+// ---- LOGICA FIREBASE (Funciones ADD) ----
 window.addMaterial = function(){
     const t = LANGS[currentLang].titles;
-    const ref = $('#mat_ref').value.trim();
-    const qty = parseInt($('#mat_qty').value.trim());
+    const refVal = $('#mat_ref').value.trim();
+    const qtyVal = parseInt($('#mat_qty').value.trim());
 
-    if (!ref || isNaN(qty) || qty < 0) {
+    if (!refVal || isNaN(qtyVal) || qtyVal < 0) {
         alert(t.alert_empty_ref);
         return;
     }
-    push(matRef, { ref: ref, qty: qty });
+    push(matRef, { ref: refVal, qty: qtyVal });
     $('#mat_ref').value = '';
     $('#mat_qty').value = '';
 };
 
 window.addFiltro = function(){
     const t = LANGS[currentLang].titles;
-    const ref = $('#fil_ref_input').value.trim();
-    const brand = $('#fil_brand_input').value.trim();
-    const model = $('#fil_model_input').value.trim();
-    const categoria = $('#fil_cat_select').value;
-    const qty = parseInt($('#fil_qty_input').value.trim());
+    const refVal = $('#fil_ref_input').value.trim();
+    const brandVal = $('#fil_brand_input').value.trim();
+    const modelVal = $('#fil_model_input').value.trim();
+    const categoriaVal = $('#fil_cat_select').value;
+    const qtyVal = parseInt($('#fil_qty_input').value.trim());
 
-    if (!ref || !brand || isNaN(qty) || qty < 0) {
+    if (!refVal || !brandVal || isNaN(qtyVal) || qtyVal < 0) {
         alert(t.alert_full_fields);
         return;
     }
-    push(filRef, { ref: ref, brand: brand, model: model, categoria: categoria, qty: qty });
+    push(filRef, { ref: refVal, brand: brandVal, model: modelVal, categoria: categoriaVal, qty: qtyVal });
     $('#fil_ref_input').value = '';
     $('#fil_brand_input').value = '';
     $('#fil_model_input').value = '';
@@ -452,7 +448,7 @@ window.addNota = function(){
 };
 
 
-// ---- LÓGICA DE USO DE FILTRO (NUEVO) ----
+// ---- LÓGICA DE USO DE FILTRO ----
 
 let currentFilterIdToUse = null; // Guarda el ID del filtro seleccionado
 
@@ -538,13 +534,12 @@ window.useFilter = function(){
     alert(`Filtro ${item.ref} usado y registrado.`);
 };
 
-// ---- ELIMINAR y EDICIÓN (Añadido 'data-type' para delegación) ----
+// ---- ELIMINAR y EDICIÓN ----
 
 window.deleteMaterial = function(id){ remove(ref(db, 'materiales/' + id)); };
 window.deleteFiltro = function(id){ remove(ref(db, 'filtros/' + id)); };
 
 window.editMaterial = function(id){
-    // (Lógica de edición simple con prompt, permanece igual)
     const t = LANGS[currentLang].titles;
     const item = lastMatData[id] || { ref: '', qty: 0 };
     const newRef = prompt(t.ref + ':', item.ref); 
@@ -554,7 +549,6 @@ window.editMaterial = function(id){
     update(ref(db,'materiales/'+id), { ref: newRef, qty: parseInt(newQty)||0 });
 };
 window.editFiltro = function(id){
-    // (Lógica de edición simple con prompt, permanece igual)
     const t = LANGS[currentLang].titles;
     const item = lastFilData[id] || { ref:'', brand:'', model:'', categoria:'aceite', qty:0 };
     const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
@@ -575,7 +569,6 @@ document.addEventListener('click', (e) => {
   const refText = btn.dataset.ref;
 
   if (btn.classList.contains('btn-use') && idVal) {
-      // Llamar al nuevo Modal de Uso
       return window.useFilterModal(idVal, refText);
   }
 
@@ -616,7 +609,7 @@ onValue(histRef, snapshot => {
 });
 
 
-// ---- CHARTS (Permanece igual) ----
+// ---- CHARTS ----
 let chartMat = null, chartFil = null;
 function createCharts(){
   const ctxM = document.getElementById('chart_materiales')?.getContext('2d');
