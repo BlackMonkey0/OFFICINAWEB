@@ -26,10 +26,12 @@ const filRef = ref(db, "filtros");
 const notRef = ref(db, "notas");
 const histRef = ref(db, "historial_usos"); 
 
-// ---- CONFIGURACIÓN DE WHATSAPP (NUEVO) ----
-// ¡IMPORTANTE! Reemplaza '34600112233' con el número de teléfono deseado (con código de país, sin '+' ni guiones).
-const WHATSAPP_PHONE_NUMBER = '34600112233'; 
+// =======================================================
+// ---- CONFIGURACIÓN DE WHATSAPP (MODIFICADO) ----
+// Número de teléfono de destino: 393491908064 (Italia)
+const WHATSAPP_PHONE_NUMBER = '393491908064'; 
 const STOCK_ALERT_THRESHOLD = 2; // Umbral de stock bajo
+// =======================================================
 
 // ---- UTILIDADES DOM / escape ----
 function $(q){ return document.querySelector(q); }
@@ -89,7 +91,7 @@ const LANGS = {
       alert_no_stock: "No hay stock disponible para esta referencia.", 
       alert_usage_fields: "Marca y Modelo del coche son requeridos.",
       prompt_car_brand: "Marca del Coche", prompt_car_model: "Modelo del Coche", prompt_used_ref: "Referencia Usada",
-      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" 
+      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" 
     }
   },
   en: { 
@@ -106,7 +108,7 @@ const LANGS = {
       alert_no_stock: "No stock available for this reference.", 
       alert_usage_fields: "Car Brand and Model are required.",
       prompt_car_brand: "Car Brand", prompt_car_model: "Car Model", prompt_used_ref: "Used Reference",
-      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" 
+      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" 
     }
   },
   it: { 
@@ -123,12 +125,12 @@ const LANGS = {
       alert_no_stock: "Nessuna scorta disponibile per questo riferimento.",
       alert_usage_fields: "Marca e Modello dell'auto sono richiesti.",
       prompt_car_brand: "Marca dell'Auto", prompt_car_model: "Modello dell'Auto", prompt_used_ref: "Riferimento Usato",
-      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" 
+      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" 
     }
   }
 };
 const langSelector = $('#lang_selector');
-let currentLang = localStorage.getItem('almacen_lang') || 'es'; 
+let currentLang = localStorage.getItem('almacen_lang') || 'es'; 
 
 if(langSelector){
   Object.keys(LANGS).forEach(l => { const o = el('option'); o.value = l; o.textContent = l.toUpperCase(); langSelector.appendChild(o); });
@@ -151,7 +153,8 @@ function applyLang(){
   $('#nav_materiales').textContent = lang.materials;
   $('#nav_filtros').textContent = lang.filters;
   $('#nav_notas').textContent = lang.notas;
-  $('#side_ref_title').textContent = t.refs;
+  // Se asume que #side_ref_title no existe en tu HTML, se usa #toggle_refs_btn
+  // $('#side_ref_title').textContent = t.refs;
   $('#toggle_refs_btn').textContent = t.refs; 
   $('#footer_text').textContent = t.footer;
   
@@ -223,23 +226,23 @@ function renderAll(){
 let lastMatData = {};
 let lastFilData = {};
 let lastNotData = {};
-let lastHistData = {}; 
+let lastHistData = {}; 
 
-// Función para generar y abrir el enlace de WhatsApp (NUEVO)
+// Función para generar y abrir el enlace de WhatsApp (MANTENIDO)
 window.sendWhatsAppAlert = function(itemRef, currentQty, type) {
-    const lang = LANGS[currentLang].titles;
-    const itemType = (type === 'material') ? lang.materials : lang.filters;
-    const message = encodeURIComponent(
-        `🚨 ALERTA DE STOCK BAJO 🚨\n\n` +
-        `Tipo: ${itemType}\n` +
-        `Referencia: ${itemRef}\n` +
-        `Stock Actual: ${currentQty}\n\n` +
-        `¡URGENTE! Necesito reponer ${itemRef}.`
-    );
-    
-    // Generar la URL de WhatsApp
-    const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${message}`;
-    window.open(whatsappUrl, '_blank');
+    const lang = LANGS[currentLang].titles;
+    const itemType = (type === 'material') ? lang.materials : lang.filters;
+    const message = encodeURIComponent(
+        `🚨 ALERTA DE STOCK BAJO 🚨\n\n` +
+        `Tipo: ${itemType}\n` +
+        `Referencia: ${itemRef}\n` +
+        `Stock Actual: ${currentQty}\n\n` +
+        `¡URGENTE! Necesito reponer ${itemRef}.`
+    );
+    
+    // Generar la URL de WhatsApp usando el número configurado
+    const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
 }
 
 
@@ -263,11 +266,11 @@ function renderMateriales(data){
     // Verificación y Botón de Alerta de Stock
     if (qty <= STOCK_ALERT_THRESHOLD) {
          alertIcon = `
-            <span 
-                class="alert-icon" 
-                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
-                onclick="sendWhatsAppAlert('${refHtml}', ${qty}, 'material')">
-                🔔
+            <span 
+                class="alert-icon" 
+                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
+                onclick="event.stopPropagation(); sendWhatsAppAlert('${refHtml}', ${qty}, 'material')">
+                📞
             </span>
         `;
     }
@@ -276,7 +279,7 @@ function renderMateriales(data){
       <td>${refHtml} ${alertIcon}</td>
       <td>${qty}</td>
       <td class="actions">
-          <button class="btn-use-mat" data-id="${id}" data-ref="${refHtml}">${lang.use}</button> 
+          <button class="btn-use-mat" data-id="${id}" data-ref="${refHtml}">${lang.use}</button> 
         <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="material">${lang.delete}</button>
       </td>`;
@@ -313,11 +316,11 @@ function renderFiltros(data){
     // Verificación y Botón de Alerta de Stock
     if (qty <= STOCK_ALERT_THRESHOLD) {
          alertIcon = `
-            <span 
-                class="alert-icon" 
-                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
-                onclick="sendWhatsAppAlert('${refHtml}', ${qty}, 'filtro')">
-                🔔
+            <span 
+                class="alert-icon" 
+                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
+                onclick="event.stopPropagation(); sendWhatsAppAlert('${refHtml}', ${qty}, 'filtro')">
+                📞
             </span>
         `;
     }
@@ -369,19 +372,19 @@ function renderHistorial(data){
 
     sortedData.forEach(([id, item]) => {
         const tr = el('tr');
-        
+        
         let vehicleText = '';
         if (item.categoria === 'material') {
             // Para materiales, carModel contiene la nota o "Stock General"
-            vehicleText = escapeHtml(item.carModel); 
+            vehicleText = escapeHtml(item.carModel); 
         } else {
             // Para filtros, se muestra la Marca y Modelo del Coche
             vehicleText = `${escapeHtml(item.carBrand || '')} ${escapeHtml(item.carModel || '')}`;
         }
-        
+        
         tr.innerHTML = `
             <td>${escapeHtml(item.ref)}</td>
-            <td>${vehicleText}</td> 
+            <td>${vehicleText}</td> 
             <td>${formatDate(item.ts)}</td>
         `;
         tbody.appendChild(tr);
@@ -443,42 +446,42 @@ window.addNota = function(){
 
 // ---- LÓGICA DE USO DE MATERIAL ----
 window.useMaterial = function(id, refText){
-    const t = LANGS[currentLang].titles;
-    const item = lastMatData[id];
-    
-    if(!item) {
-        alert("Error: Material no encontrado.");
-        return;
-    }
+    const t = LANGS[currentLang].titles;
+    const item = lastMatData[id];
+    
+    if(!item) {
+        alert("Error: Material no encontrado.");
+        return;
+    }
 
-    const currentQty = Number(item.qty) || 0;
-    if (currentQty <= 0) {
-        alert(t.alert_no_stock);
-        return;
-    }
-    
-    // Pedir una nota/vehículo usado (opcional)
-    const note = prompt("Añade una nota o vehículo (Opcional):", "");
+    const currentQty = Number(item.qty) || 0;
+    if (currentQty <= 0) {
+        alert(t.alert_no_stock);
+        return;
+    }
+    
+    // Pedir una nota/vehículo usado (opcional)
+    const note = prompt("Añade una nota o vehículo (Opcional):", "");
 
-    // 1. ACTUALIZAR STOCK EN MATERIALES (Restar 1)
-    update(ref(db, 'materiales/' + id), { qty: currentQty - 1 });
+    // 1. ACTUALIZAR STOCK EN MATERIALES (Restar 1)
+    update(ref(db, 'materiales/' + id), { qty: currentQty - 1 });
 
-    // 2. AÑADIR REGISTRO AL HISTORIAL
-    push(histRef, {
-        ref: refText,
-        carBrand: "Material", 
-        carModel: (note && note.trim()) ? note.trim() : "Stock General", 
-        categoria: "material", 
-        ts: Date.now()  
-    });
-    
-    alert(`Material ${refText} usado y registrado.`);
+    // 2. AÑADIR REGISTRO AL HISTORIAL
+    push(histRef, {
+        ref: refText,
+        carBrand: "Material", 
+        carModel: (note && note.trim()) ? note.trim() : "Stock General", 
+        categoria: "material", 
+        ts: Date.now()  
+    });
+    
+    alert(`Material ${refText} usado y registrado.`);
 };
 
 
 // ---- LÓGICA DE USO DE FILTRO ----
 
-let currentFilterIdToUse = null; 
+let currentFilterIdToUse = null; 
 
 // 1. Muestra el modal de uso
 window.useFilterModal = function(id, refText){
@@ -491,10 +494,10 @@ window.useFilterModal = function(id, refText){
 
     modalUseForm.style.display = 'block';
     modalUseButton.style.display = 'inline-block';
-    
-    // Ocultar elementos de Edición (aunque no existen en este modal, es buena práctica)
-    // $('#modal_edit_body').style.display = 'none'; 
-    // $('#modal_save').style.display = 'none';
+    
+    // Ocultar elementos de Edición (aunque no existen en este modal, es buena práctica)
+    // $('#modal_edit_body').style.display = 'none'; 
+    // $('#modal_save').style.display = 'none';
 
 
     modalTitle.textContent = LANGS[currentLang].titles.use_fil;
@@ -505,7 +508,7 @@ window.useFilterModal = function(id, refText){
     option.value = id;
     option.textContent = refText;
     refSelect.appendChild(option);
-    refSelect.disabled = true; 
+    refSelect.disabled = true; 
 
     $('#use_car_brand').value = '';
     $('#use_car_model').value = '';
@@ -577,7 +580,7 @@ window.editFiltro = function(id){
     const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
     const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; 
     const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; 
-    // La categoría se edita usando un valor simple para simplificar la UI de prompt
+    // La categoría se edita usando un valor simple para simplificar la UI de prompt
     const newCat = prompt(`${t.category} (aceite/aire/habitaculos/combustible):`, item.categoria); if(newCat===null) return; 
     const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; 
     update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
@@ -595,9 +598,9 @@ document.addEventListener('click', (e) => {
       return window.useFilterModal(idVal, refText);
   }
 
-  if (btn.classList.contains('btn-use-mat') && idVal) {
-      return window.useMaterial(idVal, refText);
-  }
+  if (btn.classList.contains('btn-use-mat') && idVal) {
+      return window.useMaterial(idVal, refText);
+  }
 
   if(btn.classList.contains('btn-delete') && idVal){
       if(btn.dataset.type === 'material') return deleteMaterial(idVal);
