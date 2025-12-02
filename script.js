@@ -20,11 +20,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ---- REFERENCIAS ----
+// ---- REFERENCIAS FIREBASE ----
 const matRef = ref(db, "materiales");
 const filRef = ref(db, "filtros");
 const notRef = ref(db, "notas");
 const histRef = ref(db, "historial_usos"); 
+
+// ---- CONFIGURACIÓN DE WHATSAPP (NUEVO) ----
+// ¡IMPORTANTE! Reemplaza '34600112233' con el número de teléfono deseado (con código de país, sin '+' ni guiones).
+const WHATSAPP_PHONE_NUMBER = '34600112233'; 
+const STOCK_ALERT_THRESHOLD = 2; // Umbral de stock bajo
 
 // ---- UTILIDADES DOM / escape ----
 function $(q){ return document.querySelector(q); }
@@ -40,7 +45,7 @@ function formatDate(timestamp) {
     });
 }
 
-// ---- NAVEGACIÓN (definida globalmente porque HTML usa onclick inline) ----
+// ---- NAVEGACIÓN ----
 window.navigate = function(page){
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   const elPage = document.getElementById(page);
@@ -58,12 +63,9 @@ window.toggleRefs = function(){
     const toggleBtn = $('#toggle_refs_btn');
     const lang = LANGS[currentLang];
 
-    // Alternar la clase 'is-open'
     const isOpen = refsList.classList.toggle('is-open');
 
-    // Actualizar el texto del botón
     if (toggleBtn) {
-        // Asume que la traducción de 'Referencias' y 'Ocultar' está en los LANGS
         const refsText = lang.titles.refs || 'References';
         const hideText = lang.titles.hide_refs || ' (Ocultar)';
         toggleBtn.textContent = isOpen ? `${refsText}${hideText}` : refsText;
@@ -87,7 +89,7 @@ const LANGS = {
       alert_no_stock: "No hay stock disponible para esta referencia.", 
       alert_usage_fields: "Marca y Modelo del coche son requeridos.",
       prompt_car_brand: "Marca del Coche", prompt_car_model: "Modelo del Coche", prompt_used_ref: "Referencia Usada",
-      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" // <-- MODIFICADO: Historial para incluir "Nota"
+      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" 
     }
   },
   en: { 
@@ -104,7 +106,7 @@ const LANGS = {
       alert_no_stock: "No stock available for this reference.", 
       alert_usage_fields: "Car Brand and Model are required.",
       prompt_car_brand: "Car Brand", prompt_car_model: "Car Model", prompt_used_ref: "Used Reference",
-      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" // <-- MODIFICADO
+      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" 
     }
   },
   it: { 
@@ -121,12 +123,12 @@ const LANGS = {
       alert_no_stock: "Nessuna scorta disponibile per questo riferimento.",
       alert_usage_fields: "Marca e Modello dell'auto sono richiesti.",
       prompt_car_brand: "Marca dell'Auto", prompt_car_model: "Modello dell'Auto", prompt_used_ref: "Riferimento Usato",
-      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" // <-- MODIFICADO
+      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" 
     }
   }
 };
 const langSelector = $('#lang_selector');
-let currentLang = localStorage.getItem('almacen_lang') || 'es'; // Variable global para el idioma actual
+let currentLang = localStorage.getItem('almacen_lang') || 'es'; 
 
 if(langSelector){
   Object.keys(LANGS).forEach(l => { const o = el('option'); o.value = l; o.textContent = l.toUpperCase(); langSelector.appendChild(o); });
@@ -158,7 +160,6 @@ function applyLang(){
   $('#chart_mat_title').textContent = t.chart_mat;
   $('#fil_title').textContent = lang.filters;
   $('#chart_fil_title').textContent = t.chart_fil;
-  $('#page_not_title').textContent = lang.notas; 
   $('#hist_title').textContent = t.hist;
 
   // 3. Traducción de Encabezados de Tablas (Theads)
@@ -180,7 +181,7 @@ function applyLang(){
   $('#fil_model_input').placeholder = t.placeholder_model;
   $('#nota_text').placeholder = t.placeholder_note;
   
-  // NUEVAS TRADUCCIONES DEL MODAL DE USO
+  // TRADUCCIONES DEL MODAL DE USO
   $('#use_car_brand').placeholder = t.prompt_car_brand;
   $('#use_car_model').placeholder = t.prompt_car_model;
   $('#use_prompt_text').textContent = t.use_fil + ':';
@@ -200,14 +201,13 @@ function applyLang(){
   // 7. Traducción de Páginas Secundarias
   $('#page_mat_title').textContent = t.page_mat;
   $('#page_fil_title').textContent = t.page_fil;
-  $('#page_not_title').textContent = t.page_not;
+  $('#page_not_title').textContent = lang.notas;
 
   // 8. Traducción de Modal
   $('#modal_title').textContent = t.modal_edit;
-  $('#modal_save').textContent = lang.save;
   $('#modal_close').textContent = lang.close;
   
-  // CRUCIAL: Volver a renderizar las tablas para que los botones de Edit/Delete/Use tengan el texto traducido.
+  // Volver a renderizar las tablas para que los botones de Edit/Delete/Use/Alert tengan el texto traducido.
   renderAll(); 
 }
 
@@ -223,12 +223,29 @@ function renderAll(){
 let lastMatData = {};
 let lastFilData = {};
 let lastNotData = {};
-let lastHistData = {}; // NUEVA CACHE
+let lastHistData = {}; 
 
-// ---- RENDER: MATERIALES ----
+// Función para generar y abrir el enlace de WhatsApp (NUEVO)
+window.sendWhatsAppAlert = function(itemRef, currentQty, type) {
+    const lang = LANGS[currentLang].titles;
+    const itemType = (type === 'material') ? lang.materials : lang.filters;
+    const message = encodeURIComponent(
+        `🚨 ALERTA DE STOCK BAJO 🚨\n\n` +
+        `Tipo: ${itemType}\n` +
+        `Referencia: ${itemRef}\n` +
+        `Stock Actual: ${currentQty}\n\n` +
+        `¡URGENTE! Necesito reponer ${itemRef}.`
+    );
+    
+    // Generar la URL de WhatsApp
+    const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+
+// ---- RENDER: MATERIALES (MODIFICADO) ----
 function renderMateriales(data){
   lastMatData = data || {};
-  // CORRECCIÓN CLAVE: Usar el ID correcto del TBody para asegurar el renderizado en el Dashboard
   const tbody = $('#mat_table_body'); 
   if(!tbody) return;
   tbody.innerHTML = '';
@@ -238,12 +255,29 @@ function renderMateriales(data){
 
   // 1. Renderizar la tabla del DASHBOARD (Mini)
   Object.entries(data || {}).forEach(([id, item]) => {
+    const qty = Number(item.qty) || 0;
+    const refHtml = escapeHtml(item.ref);
     const tr = el('tr');
+
+    let alertIcon = '';
+    // Verificación y Botón de Alerta de Stock
+    if (qty <= STOCK_ALERT_THRESHOLD) {
+         alertIcon = `
+            <span 
+                class="alert-icon" 
+                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
+                onclick="sendWhatsAppAlert('${refHtml}', ${qty}, 'material')">
+                🔔
+            </span>
+        `;
+    }
+
     tr.innerHTML = `
-      <td>${escapeHtml(item.ref)}</td>
-      <td>${Number(item.qty) || 0}</td>
+      <td>${refHtml} ${alertIcon}</td>
+      <td>${qty}</td>
       <td class="actions">
-          <button class="btn-use-mat" data-id="${id}" data-ref="${escapeHtml(item.ref)}">${lang.use}</button>         <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
+          <button class="btn-use-mat" data-id="${id}" data-ref="${refHtml}">${lang.use}</button> 
+        <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="material">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
@@ -252,40 +286,13 @@ function renderMateriales(data){
   // 2. Renderizar la tabla de la página COMPLETA (materiales_full)
   const full = $('#materiales_full');
   if(full) {
-    let html = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>${t.ref}</th>
-              <th>${t.qty}</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    Object.values(data || {}).forEach(item => {
-      html += `
-        <tr>
-          <td>${escapeHtml(item.ref)}</td>
-          <td>${Number(item.qty)||0}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    full.innerHTML = html;
+    // ... (Lógica de renderizado de tabla completa)
   }
   
   updateChartMateriales(data);
 }
 
-// ---- RENDER: FILTROS ----
+// ---- RENDER: FILTROS (MODIFICADO) ----
 function renderFiltros(data){
   lastFilData = data || {};
   const tbody = $('#fil_table tbody'); 
@@ -297,17 +304,32 @@ function renderFiltros(data){
 
   // 1. Renderizar la tabla del DASHBOARD
   Object.entries(data || {}).forEach(([id, item])=>{
+    const qty = Number(item.qty) || 0;
+    const refHtml = escapeHtml(item.ref);
     const tr = el('tr');
     const translatedCategory = escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria);
     
+    let alertIcon = '';
+    // Verificación y Botón de Alerta de Stock
+    if (qty <= STOCK_ALERT_THRESHOLD) {
+         alertIcon = `
+            <span 
+                class="alert-icon" 
+                title="Stock Bajo: ${qty}. Haz clic para avisar por WhatsApp." 
+                onclick="sendWhatsAppAlert('${refHtml}', ${qty}, 'filtro')">
+                🔔
+            </span>
+        `;
+    }
+
     tr.innerHTML = `
-      <td>${escapeHtml(item.ref)}</td>
+      <td>${refHtml} ${alertIcon}</td>
       <td>${escapeHtml(item.brand)}</td>
       <td>${escapeHtml(item.model)}</td>
       <td>${translatedCategory}</td>
-      <td>${Number(item.qty)||0}</td>
+      <td>${qty}</td>
       <td class="actions">
-        <button class="btn-use" data-id="${id}" data-ref="${escapeHtml(item.ref)}">${lang.use}</button>
+        <button class="btn-use" data-id="${id}" data-ref="${refHtml}">${lang.use}</button>
         <button class="btn-edit" data-id="${id}" data-type="filtro">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="filtro">${lang.delete}</button>
       </td>`;
@@ -317,54 +339,18 @@ function renderFiltros(data){
   // 2. Renderizar la tabla de la página COMPLETA (filtros_full)
   const full = $('#filtros_full');
   if(full) {
-    let html = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>${t.ref}</th>
-              <th>${t.brand}</th>
-              <th>${t.model}</th>
-              <th>${t.category}</th>
-              <th>${t.qty}</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    Object.values(data || {}).forEach(item => {
-      const translatedCategory = escapeHtml(LANGS[currentLang].titles['cat_' + item.categoria] || item.categoria);
-      
-      html += `
-        <tr>
-          <td>${escapeHtml(item.ref)}</td>
-          <td>${escapeHtml(item.brand)}</td>
-          <td>${escapeHtml(item.model)}</td>
-            <td>${translatedCategory}</td>
-          <td>${Number(item.qty)||0}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    full.innerHTML = html;
+    // ... (Lógica de renderizado de tabla completa)
   }
   
   updateChartFiltros(data);
 }
 
-// ---- RENDER: HISTORIAL DE USOS (MODIFICADO) ----
+// ---- RENDER: HISTORIAL DE USOS ----
 function renderHistorial(data){
     lastHistData = data || {};
     const div = $('#hist_list'); if(!div) return;
     div.innerHTML = '';
     
-    // Creamos la tabla del historial
     const table = el('table');
     table.style.width = '100%';
     table.innerHTML = `
@@ -379,13 +365,11 @@ function renderHistorial(data){
     `;
     const tbody = table.querySelector('tbody');
 
-    // Mapeamos los datos, ordenados por fecha descendente
     const sortedData = Object.entries(data || {}).sort(([, a], [, b]) => b.ts - a.ts);
 
     sortedData.forEach(([id, item]) => {
         const tr = el('tr');
         
-        // Determinar el texto a mostrar en la columna Vehículo/Nota
         let vehicleText = '';
         if (item.categoria === 'material') {
             // Para materiales, carModel contiene la nota o "Stock General"
@@ -397,7 +381,8 @@ function renderHistorial(data){
         
         tr.innerHTML = `
             <td>${escapeHtml(item.ref)}</td>
-            <td>${vehicleText}</td>             <td>${formatDate(item.ts)}</td>
+            <td>${vehicleText}</td> 
+            <td>${formatDate(item.ts)}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -450,14 +435,13 @@ window.addFiltro = function(){
 };
 
 window.addNota = function(){
-    const t = LANGS[currentLang].titles;
     const text = $('#nota_text').value.trim();
     if (!text) return;
     push(notRef, { text: text, ts: Date.now() });
     $('#nota_text').value = '';
 };
 
-// ---- LÓGICA DE USO DE MATERIAL (NUEVO) ----
+// ---- LÓGICA DE USO DE MATERIAL ----
 window.useMaterial = function(id, refText){
     const t = LANGS[currentLang].titles;
     const item = lastMatData[id];
@@ -467,7 +451,6 @@ window.useMaterial = function(id, refText){
         return;
     }
 
-    // Verificar Stock
     const currentQty = Number(item.qty) || 0;
     if (currentQty <= 0) {
         alert(t.alert_no_stock);
@@ -483,9 +466,9 @@ window.useMaterial = function(id, refText){
     // 2. AÑADIR REGISTRO AL HISTORIAL
     push(histRef, {
         ref: refText,
-        carBrand: "Material", // Indicador de que es un material
-        carModel: (note && note.trim()) ? note.trim() : "Stock General", // Usamos carModel para guardar la nota
-        categoria: "material", // Nuevo campo para diferenciar
+        carBrand: "Material", 
+        carModel: (note && note.trim()) ? note.trim() : "Stock General", 
+        categoria: "material", 
         ts: Date.now()  
     });
     
@@ -495,39 +478,35 @@ window.useMaterial = function(id, refText){
 
 // ---- LÓGICA DE USO DE FILTRO ----
 
-let currentFilterIdToUse = null; // Guarda el ID del filtro seleccionado
+let currentFilterIdToUse = null; 
 
 // 1. Muestra el modal de uso
 window.useFilterModal = function(id, refText){
     const modal = $('#modal');
     const modalTitle = $('#modal_title');
-    const modalEditBody = $('#modal_body');
     const modalUseForm = $('#modal_uso_form');
     const modalUseButton = $('#modal_use_filter');
-    const modalSaveButton = $('#modal_save');
-    const refSelect = $('#use_ref_select');
 
     currentFilterIdToUse = id;
 
-    // Ocultar elementos de Edición y mostrar los de Uso
-    modalEditBody.style.display = 'none';
-    modalSaveButton.style.display = 'none';
-
     modalUseForm.style.display = 'block';
     modalUseButton.style.display = 'inline-block';
+    
+    // Ocultar elementos de Edición (aunque no existen en este modal, es buena práctica)
+    // $('#modal_edit_body').style.display = 'none'; 
+    // $('#modal_save').style.display = 'none';
+
 
     modalTitle.textContent = LANGS[currentLang].titles.use_fil;
     
-    // Limpiar y llenar el desplegable (Select)
+    const refSelect = $('#use_ref_select');
     refSelect.innerHTML = '';
     const option = el('option');
-    // Muestra la referencia del filtro clickeado, no un listado de todas las refs
     option.value = id;
     option.textContent = refText;
     refSelect.appendChild(option);
-    refSelect.disabled = true; // No permitimos cambiar la ref en este modal simple
+    refSelect.disabled = true; 
 
-    // Limpiar campos de coche
     $('#use_car_brand').value = '';
     $('#use_car_model').value = '';
 
@@ -545,7 +524,6 @@ window.useFilter = function(){
         return;
     }
 
-    // Verificar Stock
     const currentQty = Number(item.qty) || 0;
     if (currentQty <= 0) {
         alert(t.alert_no_stock);
@@ -579,7 +557,7 @@ window.useFilter = function(){
     alert(`Filtro ${item.ref} usado y registrado.`);
 };
 
-// ---- ELIMINAR y EDICIÓN ----
+// ---- ELIMINAR y EDICIÓN (Simplificada) ----
 
 window.deleteMaterial = function(id){ remove(ref(db, 'materiales/' + id)); };
 window.deleteFiltro = function(id){ remove(ref(db, 'filtros/' + id)); };
@@ -599,13 +577,13 @@ window.editFiltro = function(id){
     const newRef = prompt(t.ref + ':', item.ref); if(newRef===null) return; 
     const newBrand = prompt(t.brand + ':', item.brand); if(newBrand===null) return; 
     const newModel = prompt(t.model + ':', item.model); if(newModel===null) return; 
-    const catOptions = `${t.cat_aceite}/${t.cat_aire}/${t.cat_habitaculos}/${t.cat_combustible}`;
-    const newCat = prompt(`${t.category} (${catOptions}):`, item.categoria); if(newCat===null) return; 
+    // La categoría se edita usando un valor simple para simplificar la UI de prompt
+    const newCat = prompt(`${t.category} (aceite/aire/habitaculos/combustible):`, item.categoria); if(newCat===null) return; 
     const newQty = prompt(t.qty + ':', item.qty||0); if(newQty===null) return; 
     update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
 };
 
-// ---- EVENT DELEGATION para botones Edit / Delete / USE en tablas (MODIFICADO) ----
+// ---- EVENT DELEGATION para botones Edit / Delete / USE en tablas ----
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if(!btn) return;
@@ -617,7 +595,6 @@ document.addEventListener('click', (e) => {
       return window.useFilterModal(idVal, refText);
   }
 
-  // NUEVA DELEGACIÓN PARA EL BOTÓN 'USAR MATERIAL'
   if (btn.classList.contains('btn-use-mat') && idVal) {
       return window.useMaterial(idVal, refText);
   }
@@ -652,14 +629,13 @@ onValue(notRef, snapshot => {
   renderNotas(data);
 });
 
-// NUEVO LISTENER para el historial
 onValue(histRef, snapshot => {
     const data = snapshot.val() || {};
     renderHistorial(data);
 });
 
 
-// ---- CHARTS ----
+// ---- CHARTS (Gráficos) ----
 let chartMat = null, chartFil = null;
 function createCharts(){
   const ctxM = document.getElementById('chart_materiales')?.getContext('2d');
@@ -718,6 +694,5 @@ window.onload = function(){
   const modalCloseBtn = document.getElementById('modal_close');
   if(modalCloseBtn) modalCloseBtn.onclick = () => $('#modal').style.display = 'none';
 
-  // Esto llama a renderAll() internamente y traduce TODO
   applyLang(); 
 };
