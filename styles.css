@@ -273,7 +273,7 @@ tbody tr:hover { background: #f7f7f7; }
     white-space: nowrap;
 }
 
-/* NUEVO: Icono de Alerta de Stock Bajo */
+/* NUEVO: Icono de Alerta de Stock Bajo (WhatsApp) */
 .alert-icon {
     color: #e67e22; /* Naranja/Ámbar */
     font-size: 1.2em;
@@ -307,7 +307,7 @@ tbody tr:hover { background: #f7f7f7; }
     opacity: 0.9;
     transform: translateY(-1px);
 }
-.btn-edit:active, .btn-delete:active, .btn-use:active, .btn-use-mat:active { 
+.btn-edit:active, .btn-delete:active, .btn-delete:active, .btn-use-mat:active { 
     transform: translateY(0);
 }
 
