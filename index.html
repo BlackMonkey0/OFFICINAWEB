@@ -1,208 +1,201 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="app_title">GESTIÓN TALLER</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="app_title">GESTIÓN TALLER</title>
+    <link rel="stylesheet" href="styles.css"> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-    <div class="sidebar">
-        <img src="image_e18a3e.png" alt="Logo" class="logo">
-        <h2 id="page_title">GESTIÓN TALLER</h2>
-        
-        <div class="lang">
-            <select id="lang_selector"></select>
-        </div>
+    <div class="sidebar">
+        <img src="placeholder_logo.png" alt="Logo" class="logo">
+        <h2 id="page_title">GESTIÓN TALLER</h2>
+        
+        <div class="lang">
+            <select id="lang_selector"></select>
+        </div>
 
-        <nav>
-            <button id="nav_dashboard" onclick="navigate('dashboard')">Dashboard</button>
-            <button id="nav_materiales" onclick="navigate('materiales_page')">Materiales</button>
-            <button id="nav_filtros" onclick="navigate('filtros_page')">Filtros</button>
-            <button id="nav_notas" onclick="navigate('notas_page')">Notas</button>
-        </nav>
+        <nav>
+            <button id="nav_dashboard" onclick="navigate('dashboard')">Dashboard</button>
+            <button id="nav_materiales" onclick="navigate('materiales_page')">Materiales</button>
+            <button id="nav_filtros" onclick="navigate('filtros_page')">Filtros</button>
+            <button id="nav_notas" onclick="navigate('notas_page')">Notas</button>
+        </nav>
         
         <div class="sidebar-section">
             <button class="btn-primary" onclick="openStockAlertModal()" id="stock_alert_btn">
                 ⚠️ Aviso de Stock
             </button>
         </div>
-                <div class="sidebar-section">
-            <button id="toggle_refs_btn" class="toggle-refs" onclick="toggleRefs()">Referencias</button>
-            <div id="refs_list" class="refs-list">
-                </div>
-        </div>
+        <div class="sidebar-section">
+            <button id="toggle_refs_btn" class="toggle-refs" onclick="toggleRefs()">Referencias</button>
+            <div id="refs_list" class="refs-list">
+            </div>
+        </div>
 
-        <div class="footer">
-            <span id="footer_text">Almacenamiento: Firebase Realtime Database</span>
-        </div>
-    </div>
-    
-    <div class="main">
-
-        <div id="dashboard" class="page">
-            <div class="row">
-                
-                <div class="col card">
-                    <h3 id="mat_title">Materiales</h3>
-                    <div class="add">
-                        <input type="text" id="mat_ref" placeholder="Referencia">
-                        <input type="number" id="mat_qty" placeholder="Cantidad" min="0">
-                        <button id="mat_add" class="btn-primary">Añadir</button>
-                    </div>
-                    <div class="table-wrap listado-compacto">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th id="th_mat_ref">Referencia</th>
-                                    <th id="th_mat_qty">Cantidad</th>
-                                    <th id="th_mat_actions">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="mat_table_body">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="col card">
-                    <h3 id="fil_title">Filtros</h3>
-                    <div class="add">
-                        <input type="text" id="fil_ref_input" placeholder="Referencia">
-                        <input type="text" id="fil_brand_input" placeholder="Marca">
-                        <input type="text" id="fil_model_input" placeholder="Modelo">
-                        <select id="fil_cat_select">
-                            <option value="aceite" id="opt_aceite">aceite</option>
-                            <option value="aire" id="opt_aire">aire</option>
-                            <option value="habitaculos" id="opt_habitaculos">habitáculos</option>
-                            <option value="combustible" id="opt_combustible">combustible</option>
-                        </select>
-                        <input type="number" id="fil_qty_input" placeholder="Cantidad" min="0">
-                        <button id="fil_add" class="btn-primary">Añadir filtro</button>
-                    </div>
-                    <div class="table-wrap listado-compacto">
-                        <table id="fil_table">
-                            <thead>
-                                <tr>
-                                    <th id="th_fil_ref">Referencia</th>
-                                    <th id="th_fil_brand">Marca</th>
-                                    <th id="th_fil_model">Modelo</th>
-                                    <th id="th_fil_cat">Categoría</th>
-                                    <th id="th_fil_qty">Cantidad</th>
-                                    <th id="th_fil_actions">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col card">
-                    <h3 id="chart_mat_title">Gráfico Materiales</h3>
-                    <div class="chart-wrap">
-                        <canvas id="chart_materiales"></canvas>
-                    </div>
-                </div>
-                <div class="col card">
-                    <h3 id="chart_fil_title">Gráfico Filtros por categoría</h3>
-                    <div class="chart-wrap">
-                        <canvas id="chart_filtros"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                 <div class="col card" style="flex: 2;">
-                    <h3 id="hist_title">Historial de Usos</h3>
-                    <div class="table-wrap listado-compacto" id="hist_list">
-                        </div>
-                </div>
-
-                <div class="col card" style="flex: 1;">
-                    <h3 id="page_not_title">Notas</h3>
-                    <div class="add" style="margin-bottom: 12px;">
-                        <textarea id="nota_text" placeholder="Añadir nota"></textarea>
-                        <button id="nota_save" class="btn-primary">Guardar nota</button>
-                    </div>
-                    <div id="notas_list" class="listado-compacto">
-                        </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="materiales_page" class="page" style="display: none;">
-            <h2 id="page_mat_title">Materiales (Página)</h2>
-            <div class="card" id="materiales_full">
-                </div>
-        </div>
-
-        <div id="filtros_page" class="page" style="display: none;">
-            <h2 id="page_fil_title">Filtros (Página)</h2>
-            <div class="card" id="filtros_full">
-                </div>
-        </div>
-
-        <div id="notas_page" class="page" style="display: none;">
-            <h2 id="page_not_title_full">Notas</h2>
-            <div class="card">
-                <div class="add" style="margin-bottom: 12px;">
-                    <textarea id="nota_text_full" placeholder="Añadir nota"></textarea>
-                    <button id="nota_save_full" class="btn-primary">Guardar nota</button>
-                </div>
-                <div id="notas_list_full" class="listado-compacto">
-                    </div>
-            </div>
-        </div>
-    </div>
-
-        <div id="modal" class="modal">
-        <div class="modal-content">
-            <h3 id="modal_title">Modal</h3>
-
-            <div id="modal_uso_form" style="display: none;">
-                <p id="use_prompt_text">Usar Filtro:</p>
-                <div class="add">
-                    <select id="use_ref_select"></select>
-                    <input type="text" id="use_car_brand" placeholder="Marca del Coche">
-                    <input type="text" id="use_car_model" placeholder="Modelo del Coche">
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button id="modal_use_filter" class="btn-use" style="display: none;"></button>
-                <button id="modal_close" class="small">Cerrar</button>
-            </div>
-        </div>
-    </div>
+        <div class="footer">
+            <span id="footer_text">Almacenamiento: Firebase Realtime Database</span>
+        </div>
+    </div>
     
-    <div id="stock_alert_modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeStockAlertModal()">&times;</span>
-            <h3 id="alert_modal_title">Solicitar Reposición de Stock</h3>
-            
-            <form id="stock_alert_form">
-                <p id="alert_instructions">Introduce los artículos y cantidades que necesitas reponer. Se enviará un resumen por WhatsApp.</p>
+    <div class="main">
+
+        <div id="dashboard" class="page">
+            <div class="row">
                 
-                <div id="alert_items_container">
+                <div class="col card">
+                    <h3 id="mat_title">Materiales</h3>
+                    <div class="add">
+                        <input type="text" id="mat_ref" placeholder="Referencia">
+                        <input type="number" id="mat_qty" placeholder="Cantidad" min="0">
+                        <button id="mat_add" class="btn-primary">Añadir</button>
                     </div>
-                
-                <button type="button" onclick="addAlertItemField()">+ Añadir otro artículo</button>
-                <textarea id="alert_note" placeholder="Nota adicional (Ej: Urgente para taller 3)"></textarea>
-                
-                <button type="submit" id="alert_send_btn" class="btn-primary">
-                    Enviar Solicitud por WhatsApp 📲
-                </button>
-            </form>
+                    <div class="table-wrap listado-compacto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th id="th_mat_ref">Referencia</th>
+                                    <th id="th_mat_qty">Cantidad</th>
+                                    <th id="th_mat_actions">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mat_table_body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col card">
+                    <h3 id="fil_title">Filtros</h3>
+                    <div class="add">
+                        <input type="text" id="fil_ref_input" placeholder="Referencia">
+                        <input type="text" id="fil_brand_input" placeholder="Marca">
+                        <input type="text" id="fil_model_input" placeholder="Modelo">
+                        <select id="fil_cat_select">
+                            <option value="aceite" id="opt_aceite">aceite</option>
+                            <option value="aire" id="opt_aire">aire</option>
+                            <option value="habitaculos" id="opt_habitaculos">habitáculos</option>
+                            <option value="combustible" id="opt_combustible">combustible</option>
+                        </select>
+                        <input type="number" id="fil_qty_input" placeholder="Cantidad" min="0">
+                        <button id="fil_add" class="btn-primary">Añadir filtro</button>
+                    </div>
+                    <div class="table-wrap listado-compacto">
+                        <table id="fil_table">
+                            <thead>
+                                <tr>
+                                    <th id="th_fil_ref">Referencia</th>
+                                    <th id="th_fil_brand">Marca</th>
+                                    <th id="th_fil_model">Modelo</th>
+                                    <th id="th_fil_cat">Categoría</th>
+                                    <th id="th_fil_qty">Cantidad</th>
+                                    <th id="th_fil_actions">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col card">
+                    <h3 id="chart_mat_title">Gráfico Materiales</h3>
+                    <div class="chart-wrap">
+                        <canvas id="chart_materiales"></canvas>
+                    </div>
+                </div>
+                <div class="col card">
+                    <h3 id="chart_fil_title">Gráfico Filtros por categoría</h3>
+                    <div class="chart-wrap">
+                        <canvas id="chart_filtros"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                   <div class="col card" style="flex: 2;">
+                    <h3 id="hist_title">Historial de Usos</h3>
+                    <div class="table-wrap listado-compacto" id="hist_list">
+                        </div>
+                </div>
+
+                <div class="col card" style="flex: 1;">
+                    <h3 id="page_not_title">Notas</h3>
+                    <div class="add" style="margin-bottom: 12px;">
+                        <textarea id="nota_text" placeholder="Añadir nota"></textarea>
+                        <button id="nota_save" class="btn-primary">Guardar nota</button>
+                    </div>
+                    <div id="notas_list" class="listado-compacto">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="materiales_page" class="page" style="display: none;">
+            <h2 id="page_mat_title">Materiales (Página)</h2>
+            <div class="card" id="materiales_full">
+                </div>
+        </div>
+
+        <div id="filtros_page" class="page" style="display: none;">
+            <h2 id="page_fil_title">Filtros (Página)</h2>
+            <div class="card" id="filtros_full">
+                </div>
+        </div>
+
+        <div id="notas_page" class="page" style="display: none;">
+            <h2 id="page_not_title_full">Notas</h2>
+            <div class="card">
+                <div class="add" style="margin-bottom: 12px;">
+                    <textarea id="nota_text_full" placeholder="Añadir nota"></textarea>
+                    <button id="nota_save_full" class="btn-primary">Guardar nota</button>
+                </div>
+                <div id="notas_list_full" class="listado-compacto">
+                    </div>
+            </div>
         </div>
     </div>
 
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal_title">Modal</h3>
 
-    <script type="module" src="script.js"></script>
+            <div id="modal_uso_form" style="display: none;">
+                <p id="use_prompt_text">Usar Filtro:</p>
+                <div class="add">
+                    <select id="use_ref_select"></select>
+                    <input type="text" id="use_car_brand" placeholder="Marca del Coche">
+                    <input type="text" id="use_car_model" placeholder="Modelo del Coche">
+                </div>
+            </div>
+            
+            <div id="stock_alert_form" style="display: none; flex-direction: column; gap: 10px;">
+                <p id="alert_instructions">Introduce los artículos y cantidades que necesitas reponer.</p>
+                
+                <div id="alert_items_container" class="alert-items-container">
+                    </div>
+                
+                <div class="alert-controls">
+                    <button type="button" id="alert_add_item_btn" class="small">+ Añadir otro artículo</button>
+                </div>
+
+                <textarea id="alert_note" placeholder="Nota adicional (Ej: Urgente para taller 3)"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button id="modal_use_filter" class="btn-use" style="display: none;">Usar</button>
+                <button id="alert_send_btn" class="btn-primary" style="display: none;">
+                    Enviar Solicitud por WhatsApp 📲
+                </button>
+                <button id="modal_close" class="small">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
 
 </body>
 </html>
