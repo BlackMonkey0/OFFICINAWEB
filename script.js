@@ -75,7 +75,7 @@ window.toggleRefs = function(){
 }
 
 
-// ---- LANGS (incluyendo USE y Historial) ----
+// ---- LANGS (incluyendo USE, Historial y Aviso de Stock) ----
 const LANGS = {
   es: { 
     materials:"Materiales", filters:"Filtros", notas:"Notas", add:"Añadir", edit:"Editar", delete:"Eliminar", save:"Guardar", close:"Cerrar", use:"Usar",
@@ -91,7 +91,14 @@ const LANGS = {
       alert_no_stock: "No hay stock disponible para esta referencia.", 
       alert_usage_fields: "Marca y Modelo del coche son requeridos.",
       prompt_car_brand: "Marca del Coche", prompt_car_model: "Modelo del Coche", prompt_used_ref: "Referencia Usada",
-      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" 
+      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora",
+      // NUEVAS TRADUCCIONES PARA ALERTA DE STOCK
+      stock_alert_btn: "Aviso de Stock",
+      modal_stock_alert: "Aviso de Stock (WhatsApp)",
+      alert_instructions: "Añade Referencia y Cantidad requerida de los artículos a pedir.",
+      alert_add_item: "Añadir Artículo",
+      alert_ref_placeholder: "Ref. Producto",
+      alert_qty_placeholder: "Cant."
     }
   },
   en: { 
@@ -108,7 +115,14 @@ const LANGS = {
       alert_no_stock: "No stock available for this reference.", 
       alert_usage_fields: "Car Brand and Model are required.",
       prompt_car_brand: "Car Brand", prompt_car_model: "Car Model", prompt_used_ref: "Used Reference",
-      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" 
+      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time",
+      // NUEVAS TRADUCCIONES PARA ALERTA DE STOCK
+      stock_alert_btn: "Stock Alert",
+      modal_stock_alert: "Stock Alert (WhatsApp)",
+      alert_instructions: "Add Reference and Quantity needed for the items to order.",
+      alert_add_item: "Add Item",
+      alert_ref_placeholder: "Product Ref.",
+      alert_qty_placeholder: "Qty."
     }
   },
   it: { 
@@ -125,7 +139,14 @@ const LANGS = {
       alert_no_stock: "Nessuna scorta disponibile per questo riferimento.",
       alert_usage_fields: "Marca e Modello dell'auto sono richiesti.",
       prompt_car_brand: "Marca dell'Auto", prompt_car_model: "Modello dell'Auto", prompt_used_ref: "Riferimento Usato",
-      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" 
+      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora",
+      // NUEVAS TRADUCCIONES PARA ALERTA DE STOCK
+      stock_alert_btn: "Avviso di Scorta",
+      modal_stock_alert: "Avviso di Scorta (WhatsApp)",
+      alert_instructions: "Aggiungi Riferimento e Quantità richiesta degli articoli da ordinare.",
+      alert_add_item: "Aggiungi Articolo",
+      alert_ref_placeholder: "Rif. Prodotto",
+      alert_qty_placeholder: "Quantità"
     }
   }
 };
@@ -157,6 +178,7 @@ function applyLang(){
   // $('#side_ref_title').textContent = t.refs;
   $('#toggle_refs_btn').textContent = t.refs; 
   $('#footer_text').textContent = t.footer;
+  $('#stock_alert_btn').textContent = t.stock_alert_btn; // NUEVO BOTÓN
   
   // 2. Traducción de Contenedores de Página (Dashboard)
   $('#mat_title').textContent = lang.materials;
@@ -189,6 +211,11 @@ function applyLang(){
   $('#use_car_model').placeholder = t.prompt_car_model;
   $('#use_prompt_text').textContent = t.use_fil + ':';
 
+  // TRADUCCIONES DEL MODAL DE ALERTA DE STOCK
+  $('#alert_instructions').textContent = t.alert_instructions;
+  $('#alert_add_item_btn').textContent = t.alert_add_item;
+  $('#alert_send_btn').textContent = lang.save; // Usamos 'Guardar'/'Save' para el envío final
+
   // 5. Traducción de Botones Principales (Añadir/Guardar)
   $('#mat_add').textContent = t.add_mat;
   $('#fil_add').textContent = t.add_fil;
@@ -207,7 +234,7 @@ function applyLang(){
   $('#page_not_title').textContent = lang.notas;
 
   // 8. Traducción de Modal
-  $('#modal_title').textContent = t.modal_edit;
+  // El título del modal se actualizará dinámicamente al abrirlo (editar/usar/alerta)
   $('#modal_close').textContent = lang.close;
   
   // Volver a renderizar las tablas para que los botones de Edit/Delete/Use/Alert tengan el texto traducido.
@@ -228,7 +255,7 @@ let lastFilData = {};
 let lastNotData = {};
 let lastHistData = {}; 
 
-// Función para generar y abrir el enlace de WhatsApp (MANTENIDO)
+// Función para generar y abrir el enlace de WhatsApp (INDIVIDUAL)
 window.sendWhatsAppAlert = function(itemRef, currentQty, type) {
     const lang = LANGS[currentLang].titles;
     const itemType = (type === 'material') ? lang.materials : lang.filters;
@@ -244,6 +271,123 @@ window.sendWhatsAppAlert = function(itemRef, currentQty, type) {
     const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${message}`;
     window.open(whatsappUrl, '_blank');
 }
+
+
+// =======================================================
+// ---- NUEVA LÓGICA: ENVÍO MASIVO DE ALERTA DE STOCK ----
+// =======================================================
+
+/**
+ * 1. Muestra el modal de alerta de stock.
+ */
+window.openStockAlertModal = function() {
+    const modal = $('#modal');
+    const t = LANGS[currentLang].titles;
+    
+    // Ocultar otros formularios del modal
+    $('#modal_uso_form').style.display = 'none';
+    $('#modal_use_filter').style.display = 'none';
+    
+    // Configurar y mostrar el formulario de alerta
+    const alertForm = $('#stock_alert_form');
+    alertForm.style.display = 'flex';
+    $('#modal_title').textContent = t.modal_stock_alert;
+    
+    // Limpiar y añadir un campo de artículo por defecto
+    const container = $('#alert_items_container');
+    container.innerHTML = '';
+    window.addAlertItem();
+
+    modal.style.display = 'flex';
+};
+
+
+/**
+ * 2. Crea y añade un nuevo par de campos de Referencia y Cantidad.
+ */
+window.addAlertItem = function() {
+    const container = $('#alert_items_container');
+    const t = LANGS[currentLang].titles;
+    
+    const div = el('div');
+    div.className = 'alert-item-group';
+    
+    // Input de Referencia
+    const refInput = el('input');
+    refInput.type = 'text';
+    refInput.className = 'alert-ref-input';
+    refInput.placeholder = t.alert_ref_placeholder;
+    
+    // Input de Cantidad
+    const qtyInput = el('input');
+    qtyInput.type = 'number';
+    qtyInput.min = '1';
+    qtyInput.className = 'alert-qty-input';
+    qtyInput.placeholder = t.alert_qty_placeholder;
+    qtyInput.value = '1';
+
+    div.appendChild(refInput);
+    div.appendChild(qtyInput);
+    
+    // Botón de eliminar (si hay más de uno)
+    if (container.children.length > 0) {
+        const deleteBtn = el('button');
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = 'X';
+        deleteBtn.onclick = () => container.removeChild(div);
+        deleteBtn.className = 'small btn-delete';
+        div.appendChild(deleteBtn);
+    }
+
+    container.appendChild(div);
+    refInput.focus();
+};
+
+/**
+ * 3. Recopila los datos y envía el mensaje de WhatsApp.
+ */
+window.sendStockAlert = function() {
+    const t = LANGS[currentLang].titles;
+    const items = [];
+    const itemGroups = document.querySelectorAll('#alert_items_container .alert-item-group');
+
+    // 1. Recopilar datos
+    itemGroups.forEach(group => {
+        const refInput = group.querySelector('.alert-ref-input');
+        const qtyInput = group.querySelector('.alert-qty-input');
+        
+        const refVal = refInput.value.trim();
+        const qtyVal = parseInt(qtyInput.value.trim());
+
+        if (refVal && qtyVal > 0) {
+            items.push({ ref: refVal, qty: qtyVal });
+        }
+    });
+
+    if (items.length === 0) {
+        alert("Por favor, añade al menos un artículo con Referencia y Cantidad.");
+        return;
+    }
+
+    // 2. Construir el mensaje
+    let messageBody = "🚨 SOLICITUD DE PEDIDO DE STOCK 🚨\n\n";
+    messageBody += "Lista de artículos a pedir:\n";
+    
+    items.forEach(item => {
+        messageBody += `\n* ${item.ref} (Cant: ${item.qty})`;
+    });
+
+    messageBody += "\n\nPor favor, gestiona el pedido lo antes posible.";
+    
+    const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${encodeURIComponent(messageBody)}`;
+    
+    // 3. Enviar y cerrar modal
+    window.open(whatsappUrl, '_blank');
+    $('#modal').style.display = 'none';
+
+    // 4. Feedback (opcional)
+    alert("Mensaje de WhatsApp generado con éxito.");
+};
 
 
 // ---- RENDER: MATERIALES (MODIFICADO) ----
@@ -492,14 +636,12 @@ window.useFilterModal = function(id, refText){
 
     currentFilterIdToUse = id;
 
+    // Ocultar formulario de alerta
+    $('#stock_alert_form').style.display = 'none';
+
     modalUseForm.style.display = 'block';
     modalUseButton.style.display = 'inline-block';
     
-    // Ocultar elementos de Edición (aunque no existen en este modal, es buena práctica)
-    // $('#modal_edit_body').style.display = 'none'; 
-    // $('#modal_save').style.display = 'none';
-
-
     modalTitle.textContent = LANGS[currentLang].titles.use_fil;
     
     const refSelect = $('#use_ref_select');
@@ -693,9 +835,25 @@ window.onload = function(){
   const modalUseFilterBtn = document.getElementById('modal_use_filter');
   if(modalUseFilterBtn) modalUseFilterBtn.onclick = window.useFilter;
   
+  // Conexión del botón de "Aviso de Stock" (sidebar)
+  const stockAlertBtn = document.getElementById('stock_alert_btn');
+  if(stockAlertBtn) stockAlertBtn.onclick = window.openStockAlertModal;
+  
+  // Conexión de los botones del modal de Alerta de Stock
+  const alertAddItemBtn = document.getElementById('alert_add_item_btn');
+  if(alertAddItemBtn) alertAddItemBtn.onclick = window.addAlertItem;
+  const alertSendBtn = document.getElementById('alert_send_btn');
+  if(alertSendBtn) alertSendBtn.onclick = window.sendStockAlert;
+
+
   // Conexión del botón "Cerrar" del modal para limpiar el estado
   const modalCloseBtn = document.getElementById('modal_close');
-  if(modalCloseBtn) modalCloseBtn.onclick = () => $('#modal').style.display = 'none';
+  if(modalCloseBtn) modalCloseBtn.onclick = () => {
+        $('#modal').style.display = 'none';
+        // Asegurarse de ocultar todos los formularios al cerrar
+        $('#modal_uso_form').style.display = 'none';
+        $('#stock_alert_form').style.display = 'none';
+  };
 
   applyLang(); 
 };
