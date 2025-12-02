@@ -54,20 +54,20 @@ window.navigate = function(page){
 
 // ---- SIDEBAR (Toggle Referencias) ----
 window.toggleRefs = function(){
-    const refsList = $('#refs_list');
-    const toggleBtn = $('#toggle_refs_btn');
-    const lang = LANGS[currentLang];
+    const refsList = $('#refs_list');
+    const toggleBtn = $('#toggle_refs_btn');
+    const lang = LANGS[currentLang];
 
-    // Alternar la clase 'is-open'
-    const isOpen = refsList.classList.toggle('is-open');
+    // Alternar la clase 'is-open'
+    const isOpen = refsList.classList.toggle('is-open');
 
-    // Actualizar el texto del botón
-    if (toggleBtn) {
-        // Asume que la traducción de 'Referencias' y 'Ocultar' está en los LANGS
-        const refsText = lang.titles.refs || 'References';
-        const hideText = lang.titles.hide_refs || ' (Ocultar)';
-        toggleBtn.textContent = isOpen ? `${refsText}${hideText}` : refsText;
-    }
+    // Actualizar el texto del botón
+    if (toggleBtn) {
+        // Asume que la traducción de 'Referencias' y 'Ocultar' está en los LANGS
+        const refsText = lang.titles.refs || 'References';
+        const hideText = lang.titles.hide_refs || ' (Ocultar)';
+        toggleBtn.textContent = isOpen ? `${refsText}${hideText}` : refsText;
+    }
 }
 
 
@@ -87,7 +87,7 @@ const LANGS = {
       alert_no_stock: "No hay stock disponible para esta referencia.", 
       alert_usage_fields: "Marca y Modelo del coche son requeridos.",
       prompt_car_brand: "Marca del Coche", prompt_car_model: "Modelo del Coche", prompt_used_ref: "Referencia Usada",
-      hist_ref: "Ref. Usada", hist_car: "Vehículo", hist_time: "Fecha/Hora"
+      hist_ref: "Ref. Usada", hist_car: "Vehículo/Nota", hist_time: "Fecha/Hora" // <-- MODIFICADO: Historial para incluir "Nota"
     }
   },
   en: { 
@@ -104,7 +104,7 @@ const LANGS = {
       alert_no_stock: "No stock available for this reference.", 
       alert_usage_fields: "Car Brand and Model are required.",
       prompt_car_brand: "Car Brand", prompt_car_model: "Car Model", prompt_used_ref: "Used Reference",
-      hist_ref: "Used Ref.", hist_car: "Vehicle", hist_time: "Date/Time"
+      hist_ref: "Used Ref.", hist_car: "Vehicle/Note", hist_time: "Date/Time" // <-- MODIFICADO
     }
   },
   it: { 
@@ -121,7 +121,7 @@ const LANGS = {
       alert_no_stock: "Nessuna scorta disponibile per questo riferimento.",
       alert_usage_fields: "Marca e Modello dell'auto sono richiesti.",
       prompt_car_brand: "Marca dell'Auto", prompt_car_model: "Modello dell'Auto", prompt_used_ref: "Riferimento Usato",
-      hist_ref: "Rif. Usato", hist_car: "Veicolo", hist_time: "Data/Ora"
+      hist_ref: "Rif. Usato", hist_car: "Veicolo/Nota", hist_time: "Data/Ora" // <-- MODIFICADO
     }
   }
 };
@@ -150,7 +150,7 @@ function applyLang(){
   $('#nav_filtros').textContent = lang.filters;
   $('#nav_notas').textContent = lang.notas;
   $('#side_ref_title').textContent = t.refs;
-  $('#toggle_refs_btn').textContent = t.refs; 
+  $('#toggle_refs_btn').textContent = t.refs; 
   $('#footer_text').textContent = t.footer;
   
   // 2. Traducción de Contenedores de Página (Dashboard)
@@ -158,7 +158,7 @@ function applyLang(){
   $('#chart_mat_title').textContent = t.chart_mat;
   $('#fil_title').textContent = lang.filters;
   $('#chart_fil_title').textContent = t.chart_fil;
-  $('#page_not_title').textContent = lang.notas; 
+  $('#page_not_title').textContent = lang.notas; 
   $('#hist_title').textContent = t.hist;
 
   // 3. Traducción de Encabezados de Tablas (Theads)
@@ -229,12 +229,12 @@ let lastHistData = {}; // NUEVA CACHE
 function renderMateriales(data){
   lastMatData = data || {};
   // CORRECCIÓN CLAVE: Usar el ID correcto del TBody para asegurar el renderizado en el Dashboard
-  const tbody = $('#mat_table_body'); 
+  const tbody = $('#mat_table_body'); 
   if(!tbody) return;
   tbody.innerHTML = '';
   
-  const lang = LANGS[currentLang]; 
-  const t = lang.titles; 
+  const lang = LANGS[currentLang]; 
+  const t = lang.titles; 
 
   // 1. Renderizar la tabla del DASHBOARD (Mini)
   Object.entries(data || {}).forEach(([id, item]) => {
@@ -243,7 +243,7 @@ function renderMateriales(data){
       <td>${escapeHtml(item.ref)}</td>
       <td>${Number(item.qty) || 0}</td>
       <td class="actions">
-        <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
+          <button class="btn-use-mat" data-id="${id}" data-ref="${escapeHtml(item.ref)}">${lang.use}</button>         <button class="btn-edit" data-id="${id}" data-type="material">${lang.edit}</button>
         <button class="btn-delete" data-id="${id}" data-type="material">${lang.delete}</button>
       </td>`;
     tbody.appendChild(tr);
@@ -288,7 +288,7 @@ function renderMateriales(data){
 // ---- RENDER: FILTROS ----
 function renderFiltros(data){
   lastFilData = data || {};
-  const tbody = $('#fil_table tbody'); 
+  const tbody = $('#fil_table tbody'); 
   if(!tbody) return;
   tbody.innerHTML = '';
 
@@ -358,7 +358,7 @@ function renderFiltros(data){
   updateChartFiltros(data);
 }
 
-// ---- RENDER: HISTORIAL DE USOS (NUEVO) ----
+// ---- RENDER: HISTORIAL DE USOS (MODIFICADO) ----
 function renderHistorial(data){
     lastHistData = data || {};
     const div = $('#hist_list'); if(!div) return;
@@ -384,10 +384,20 @@ function renderHistorial(data){
 
     sortedData.forEach(([id, item]) => {
         const tr = el('tr');
+        
+        // Determinar el texto a mostrar en la columna Vehículo/Nota
+        let vehicleText = '';
+        if (item.categoria === 'material') {
+            // Para materiales, carModel contiene la nota o "Stock General"
+            vehicleText = escapeHtml(item.carModel); 
+        } else {
+            // Para filtros, se muestra la Marca y Modelo del Coche
+            vehicleText = `${escapeHtml(item.carBrand || '')} ${escapeHtml(item.carModel || '')}`;
+        }
+        
         tr.innerHTML = `
             <td>${escapeHtml(item.ref)}</td>
-            <td>${escapeHtml(item.carBrand)} ${escapeHtml(item.carModel)}</td>
-            <td>${formatDate(item.ts)}</td>
+            <td>${vehicleText}</td>             <td>${formatDate(item.ts)}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -407,44 +417,79 @@ function renderNotas(data){
 
 // ---- LOGICA FIREBASE (Funciones ADD) ----
 window.addMaterial = function(){
-    const t = LANGS[currentLang].titles;
-    const refVal = $('#mat_ref').value.trim();
-    const qtyVal = parseInt($('#mat_qty').value.trim());
+    const t = LANGS[currentLang].titles;
+    const refVal = $('#mat_ref').value.trim();
+    const qtyVal = parseInt($('#mat_qty').value.trim());
 
-    if (!refVal || isNaN(qtyVal) || qtyVal < 0) {
-        alert(t.alert_empty_ref);
-        return;
-    }
-    push(matRef, { ref: refVal, qty: qtyVal });
-    $('#mat_ref').value = '';
-    $('#mat_qty').value = '';
+    if (!refVal || isNaN(qtyVal) || qtyVal < 0) {
+        alert(t.alert_empty_ref);
+        return;
+    }
+    push(matRef, { ref: refVal, qty: qtyVal });
+    $('#mat_ref').value = '';
+    $('#mat_qty').value = '';
 };
 
 window.addFiltro = function(){
-    const t = LANGS[currentLang].titles;
-    const refVal = $('#fil_ref_input').value.trim();
-    const brandVal = $('#fil_brand_input').value.trim();
-    const modelVal = $('#fil_model_input').value.trim();
-    const categoriaVal = $('#fil_cat_select').value;
-    const qtyVal = parseInt($('#fil_qty_input').value.trim());
+    const t = LANGS[currentLang].titles;
+    const refVal = $('#fil_ref_input').value.trim();
+    const brandVal = $('#fil_brand_input').value.trim();
+    const modelVal = $('#fil_model_input').value.trim();
+    const categoriaVal = $('#fil_cat_select').value;
+    const qtyVal = parseInt($('#fil_qty_input').value.trim());
 
-    if (!refVal || !brandVal || isNaN(qtyVal) || qtyVal < 0) {
-        alert(t.alert_full_fields);
-        return;
-    }
-    push(filRef, { ref: refVal, brand: brandVal, model: modelVal, categoria: categoriaVal, qty: qtyVal });
-    $('#fil_ref_input').value = '';
-    $('#fil_brand_input').value = '';
-    $('#fil_model_input').value = '';
-    $('#fil_qty_input').value = '';
+    if (!refVal || !brandVal || isNaN(qtyVal) || qtyVal < 0) {
+        alert(t.alert_full_fields);
+        return;
+    }
+    push(filRef, { ref: refVal, brand: brandVal, model: modelVal, categoria: categoriaVal, qty: qtyVal });
+    $('#fil_ref_input').value = '';
+    $('#fil_brand_input').value = '';
+    $('#fil_model_input').value = '';
+    $('#fil_qty_input').value = '';
 };
 
 window.addNota = function(){
+    const t = LANGS[currentLang].titles;
+    const text = $('#nota_text').value.trim();
+    if (!text) return;
+    push(notRef, { text: text, ts: Date.now() });
+    $('#nota_text').value = '';
+};
+
+// ---- LÓGICA DE USO DE MATERIAL (NUEVO) ----
+window.useMaterial = function(id, refText){
     const t = LANGS[currentLang].titles;
-    const text = $('#nota_text').value.trim();
-    if (!text) return;
-    push(notRef, { text: text, ts: Date.now() });
-    $('#nota_text').value = '';
+    const item = lastMatData[id];
+    
+    if(!item) {
+        alert("Error: Material no encontrado.");
+        return;
+    }
+
+    // Verificar Stock
+    const currentQty = Number(item.qty) || 0;
+    if (currentQty <= 0) {
+        alert(t.alert_no_stock);
+        return;
+    }
+    
+    // Pedir una nota/vehículo usado (opcional)
+    const note = prompt("Añade una nota o vehículo (Opcional):", "");
+
+    // 1. ACTUALIZAR STOCK EN MATERIALES (Restar 1)
+    update(ref(db, 'materiales/' + id), { qty: currentQty - 1 });
+
+    // 2. AÑADIR REGISTRO AL HISTORIAL
+    push(histRef, {
+        ref: refText,
+        carBrand: "Material", // Indicador de que es un material
+        carModel: (note && note.trim()) ? note.trim() : "Stock General", // Usamos carModel para guardar la nota
+        categoria: "material", // Nuevo campo para diferenciar
+        ts: Date.now()  
+    });
+    
+    alert(`Material ${refText} usado y registrado.`);
 };
 
 
@@ -560,7 +605,7 @@ window.editFiltro = function(id){
     update(ref(db,'filtros/'+id), { ref:newRef, brand:newBrand, model:newModel, categoria:newCat, qty: parseInt(newQty)||0 });
 };
 
-// ---- EVENT DELEGATION para botones Edit / Delete / USE en tablas ----
+// ---- EVENT DELEGATION para botones Edit / Delete / USE en tablas (MODIFICADO) ----
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if(!btn) return;
@@ -571,6 +616,11 @@ document.addEventListener('click', (e) => {
   if (btn.classList.contains('btn-use') && idVal) {
       return window.useFilterModal(idVal, refText);
   }
+
+  // NUEVA DELEGACIÓN PARA EL BOTÓN 'USAR MATERIAL'
+  if (btn.classList.contains('btn-use-mat') && idVal) {
+      return window.useMaterial(idVal, refText);
+  }
 
   if(btn.classList.contains('btn-delete') && idVal){
       if(btn.dataset.type === 'material') return deleteMaterial(idVal);
